@@ -19,6 +19,22 @@ function getType(totalAtk, totalDef, totalSta, isRatchetBit) {
 function tbaOrVal(val, hasZero) { return hasZero ? "TBA" : val; }
 function weightStr(w, hasZero) { return hasZero ? "TBA" : w.toFixed(2) + "g"; }
 
+function typeLogo(type) {
+  let file;
+  if (type === "Attack") file = "Attack_logo_Beyblade_X.webp";
+  else if (type === "Defense") file = "Defense_logo_Beyblade_X.webp";
+  else if (type === "Stamina") file = "Stamina_logo_Beyblade_X.webp";
+  else file = "Balance_logo_Beyblade_X.webp";
+  return `<img src="assets/type/${file}" alt="${type}" title="${type}" class="type-logo">`;
+}
+
+function spinLogo(dir) {
+  const isLeft = dir === "L" || dir === "Left";
+  const file = isLeft ? "Left-Spin_logo_Beyblade_X.webp" : "Right-Spin_logo_Beyblade_X.webp";
+  const label = isLeft ? "Left Spin" : "Right Spin";
+  return `<img src="assets/spin/${file}" alt="${label}" title="${label}" class="spin-logo">`;
+}
+
 // --- Sort all DATA arrays alphabetically by name ---
 function sortData() {
   Object.keys(DATA).forEach(key => {
@@ -229,11 +245,12 @@ function renderResult(res) {
 
   let html = `<h2 class="status-success">${res.message}</h2>`;
   if (res.comboName) {
-    html += `<div class="combo-name">${res.comboName} <span class="type-badge">${res.type}</span></div>`;
+    const spin = res.grandTotal && res.grandTotal["Spin Direction"] ? ` ${res.grandTotal["Spin Direction"]}` : "";
+    html += `<div class="combo-name">${res.comboName} ${typeLogo(res.type)}${spin}</div>`;
   }
 
   html += renderStatBars(res.grandTotal);
-  const { ATK, DEF, STA, ...grandTotalRest } = res.grandTotal;
+  const { ATK, DEF, STA, Type, "Spin Direction": _spin, ...grandTotalRest } = res.grandTotal;
   html += renderStatTable("", grandTotalRest);
 
   el.innerHTML = html;
@@ -341,11 +358,13 @@ function calcStandard(form) {
     type: getType(gAtk, gDef, gSta, isRB),
     grandTotal: {
       ATK: tbaOrVal(gAtk, gAtkZ), DEF: tbaOrVal(gDef, gDefZ), STA: tbaOrVal(gSta, gStaZ),
+      ...(blade.modes ? { "Blade Mode": blade.modes[blade.currentMode].modeName } : {}),
+      ...(rb && !isClockMirage && rb.modes ? { "Ratchet-Bit Mode": rb.modes[rb.currentMode].modeName } : {}),
       ...(bHeight != null ? { Height: bHeight } : {}),
       Dash: bDash, "Burst Res": bBurstRes,
       Weight: weightStr(blade.weight + bWeight, gWeightZ),
-      Type: getType(gAtk, gDef, gSta, isRB),
-      "Spin Direction": blade.spindirection,
+      Type: typeLogo(getType(gAtk, gDef, gSta, isRB)),
+      "Spin Direction": spinLogo(blade.spindirection),
     },
   });
 }
@@ -409,10 +428,19 @@ function calcCX(form) {
   const bDash = rb ? rb.dash : bit.dash;
   const bBurstRes = rb ? rb.burstRes : bit.burstRes;
   const bHeight = rb ? rb.height : ratchet.height;
+  const totalHeight = (bHeight === 0 || ab.height === 0) ? "TBA" : bHeight + ab.height;
 
   renderResult({
     status: "Success", message: "Combo created successfully", comboName, type: getType(gAtk, gDef, gSta, isRB),
-    grandTotal: { ATK: tbaOrVal(gAtk, gAtkZ), DEF: tbaOrVal(gDef, gDefZ), STA: tbaOrVal(gSta, gStaZ), Height: bHeight, Dash: bDash, "Burst Res": bBurstRes, Weight: weightStr(topWeight + bWeight, gWeightZ), Type: getType(gAtk, gDef, gSta, isRB), "Spin Direction": mb.spindirection },
+    grandTotal: {
+      ATK: tbaOrVal(gAtk, gAtkZ), DEF: tbaOrVal(gDef, gDefZ), STA: tbaOrVal(gSta, gStaZ),
+      ...(mb.modes ? { "Main Blade Mode": mb.modes[mb.currentMode].modeName } : {}),
+      ...(ab.modes ? { "Assist Blade Mode": ab.modes[ab.currentMode].modeName } : {}),
+      ...(rb && rb.modes ? { "Ratchet-Bit Mode": rb.modes[rb.currentMode].modeName } : {}),
+      Height: totalHeight, Dash: bDash, "Burst Res": bBurstRes,
+      Weight: weightStr(topWeight + bWeight, gWeightZ),
+      Type: typeLogo(getType(gAtk, gDef, gSta, isRB)), "Spin Direction": spinLogo(mb.spindirection),
+    },
   });
 }
 
@@ -490,10 +518,18 @@ function calcCXExpand(form) {
   const bDash = rb ? rb.dash : bit.dash;
   const bBurstRes = rb ? rb.burstRes : bit.burstRes;
   const bHeight = rb ? rb.height : ratchet.height;
+  const totalHeight = (bHeight === 0 || ab.height === 0) ? "TBA" : bHeight + ab.height;
 
   renderResult({
     status: "Success", message: "Combo expanded successfully", comboName, type: getType(gAtk, gDef, gSta, isRB),
-    grandTotal: { ATK: tbaOrVal(gAtk, gAtkZ), DEF: tbaOrVal(gDef, gDefZ), STA: tbaOrVal(gSta, gStaZ), Height: bHeight, Dash: bDash, "Burst Res": bBurstRes, Weight: weightStr(topWeight + bWeight, gWeightZ), Type: getType(gAtk, gDef, gSta, isRB), "Spin Direction": metalBlade.spindirection },
+    grandTotal: {
+      ATK: tbaOrVal(gAtk, gAtkZ), DEF: tbaOrVal(gDef, gDefZ), STA: tbaOrVal(gSta, gStaZ),
+      ...(ab.modes ? { "Assist Blade Mode": ab.modes[ab.currentMode].modeName } : {}),
+      ...(rb && rb.modes ? { "Ratchet-Bit Mode": rb.modes[rb.currentMode].modeName } : {}),
+      Height: totalHeight, Dash: bDash, "Burst Res": bBurstRes,
+      Weight: weightStr(topWeight + bWeight, gWeightZ),
+      Type: typeLogo(getType(gAtk, gDef, gSta, isRB)), "Spin Direction": spinLogo(metalBlade.spindirection),
+    },
   });
 }
 
@@ -546,6 +582,77 @@ initDropdowns();
       rbInput.placeholder = "-- Select --";
     }
   });
+})();
+
+// --- Generic multi-mode item button ---
+function setupModeButton(form, selectName, dataArray) {
+  const sel = form.querySelector(`[name="${selectName}"]`);
+  if (!sel) return;
+  const label = sel.closest("label");
+  if (!label) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn btn-mode hidden";
+  btn.dataset.modeFor = selectName;
+  label.parentNode.insertBefore(btn, label.nextSibling);
+
+  function applyMode(item) {
+    const m = item.modes[item.currentMode];
+    for (const k in m) {
+      if (k !== "modeName") item[k] = m[k];
+    }
+  }
+
+  function refreshBtn() {
+    const idx = sel.value;
+    if (idx === "") { btn.classList.add("hidden"); return; }
+    const item = dataArray[idx];
+    if (!item || !item.modes) { btn.classList.add("hidden"); return; }
+    btn.classList.remove("hidden");
+    btn.textContent = `Mode: ${item.modes[item.currentMode].modeName} (click to switch)`;
+  }
+
+  sel.addEventListener("change", () => {
+    const idx = sel.value;
+    if (idx !== "") {
+      const item = dataArray[idx];
+      if (item && item.modes) {
+        item.currentMode = 0;
+        applyMode(item);
+      }
+    }
+    refreshBtn();
+  });
+
+  btn.addEventListener("click", () => {
+    const idx = sel.value;
+    if (idx === "") return;
+    const item = dataArray[idx];
+    if (!item || !item.modes) return;
+    item.currentMode = (item.currentMode + 1) % item.modes.length;
+    applyMode(item);
+    refreshBtn();
+    if (!document.getElementById("result").classList.contains("hidden")) {
+      form.requestSubmit();
+    }
+  });
+}
+
+(function() {
+  const stdForm = document.getElementById("form-standard");
+  const cxForm = document.getElementById("form-cx");
+  const cxeForm = document.getElementById("form-cxExpand");
+
+  setupModeButton(stdForm, "blade", DATA.blades);
+  setupModeButton(stdForm, "ratchetBit", DATA.ratchetBits);
+
+  setupModeButton(cxForm, "mainBlade", DATA.mainBlades);
+  setupModeButton(cxForm, "assistBlade", DATA.assistBlades);
+  setupModeButton(cxForm, "ratchetBit", DATA.ratchetBits);
+
+  setupModeButton(cxeForm, "assistBlade", DATA.assistBlades);
+  setupModeButton(cxeForm, "ratchetBit", DATA.ratchetBits);
 })();
 
 // --- Ratchet <-> Ratchet-Bit mutual disable ---
@@ -609,6 +716,7 @@ document.querySelectorAll(".btn-reset").forEach(btn => {
     if (bInput) { bInput.disabled = false; bInput.placeholder = "-- Select --"; }
     const rbInput = form.querySelector('[name="ratchetBit"]')?.nextElementSibling?.querySelector("input");
     if (rbInput) { rbInput.disabled = false; rbInput.placeholder = "-- Select --"; }
+    form.querySelectorAll(".btn-mode").forEach(b => b.classList.add("hidden"));
     document.getElementById("result").classList.add("hidden");
   });
 });
@@ -677,15 +785,9 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
 (function() {
   const popup = document.getElementById("update-popup");
   if (!popup) return;
-  const version = popup.dataset.version || "1";
-  const storageKey = "updatePopupSeen";
-  if (localStorage.getItem(storageKey) === version) return;
 
   popup.classList.remove("hidden");
-  const dismiss = () => {
-    popup.classList.add("hidden");
-    try { localStorage.setItem(storageKey, version); } catch (e) {}
-  };
+  const dismiss = () => { popup.classList.add("hidden"); };
   popup.querySelector(".popup-close").addEventListener("click", dismiss);
   popup.querySelector(".popup-ok").addEventListener("click", dismiss);
   popup.addEventListener("click", e => { if (e.target === popup) dismiss(); });
