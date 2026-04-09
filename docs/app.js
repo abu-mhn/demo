@@ -636,7 +636,7 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
         getWrapper(form, "ratchet")._select(valid[Math.floor(Math.random() * valid.length)].i);
         getWrapper(form, "bit")._select(randIdx(DATA.bits));
       } else {
-        if (Math.random() < 0.5 && DATA.ratchetBits.length > 0) {
+        if (Math.random() < 0.05 && DATA.ratchetBits.length > 0) {
           getWrapper(form, "ratchetBit")._select(randIdx(DATA.ratchetBits));
         } else {
           getWrapper(form, "ratchet")._select(randIdx(DATA.ratchets));
@@ -647,7 +647,7 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
       getWrapper(form, "lockChip")._select(randIdx(DATA.lockChips));
       getWrapper(form, "mainBlade")._select(randIdx(DATA.mainBlades));
       getWrapper(form, "assistBlade")._select(randIdx(DATA.assistBlades));
-      if (Math.random() < 0.5 && DATA.ratchetBits.length > 0) {
+      if (Math.random() < 0.05 && DATA.ratchetBits.length > 0) {
         getWrapper(form, "ratchetBit")._select(randIdx(DATA.ratchetBits));
       } else {
         getWrapper(form, "ratchet")._select(randIdx(DATA.ratchets));
@@ -658,7 +658,7 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
       getWrapper(form, "metalBlade")._select(randIdx(DATA.metalBlades));
       getWrapper(form, "overBlade")._select(randIdx(DATA.overBlades));
       getWrapper(form, "assistBlade")._select(randIdx(DATA.assistBlades));
-      if (Math.random() < 0.5 && DATA.ratchetBits.length > 0) {
+      if (Math.random() < 0.05 && DATA.ratchetBits.length > 0) {
         getWrapper(form, "ratchetBit")._select(randIdx(DATA.ratchetBits));
       } else {
         getWrapper(form, "ratchet")._select(randIdx(DATA.ratchets));

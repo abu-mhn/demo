@@ -55,7 +55,7 @@ const DATA = {
     { atk:13, def:65, sta:22, weight:31.5, spindirection:"R", name:"Goat Tackle", codename:"GOATTACKLE" },
     { atk:10, def:10, sta:80, weight:37.6, spindirection:"R", name:"Clock Mirage", codename:"CLOCKMIRAGE" },
     { atk:20, def:25, sta:55, weight:29.6, spindirection:"R", name:"Shark Gill", codename:"SHARKGILL" },
-    { atk:75, def:15, sta:35, weight:39.0, spindirection:"R", name:"Meteor Dragoon", codename:"METEORDRAGOON" },
+    { atk:75, def:15, sta:35, weight:39.0, spindirection:"L", name:"Meteor Dragoon", codename:"METEORDRAGOON" },
     { atk:30, def:60, sta:20, weight:37.5, spindirection:"R", name:"Mummy Curse", codename:"MUMMYCURSE" },
     { atk:55, def:30, sta:15, weight:25.1, spindirection:"L", name:"Dragoon Storm", codename:"DRAGOONSTORM" },
     { atk:30, def:40, sta:30, weight:0, spindirection:"R", name:"Storm Spriggan", codename:"STORMSPRIGGAN" },
