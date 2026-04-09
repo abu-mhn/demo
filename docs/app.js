@@ -19,8 +19,15 @@ function getType(totalAtk, totalDef, totalSta, isRatchetBit) {
 function tbaOrVal(val, hasZero) { return hasZero ? "TBA" : val; }
 function weightStr(w, hasZero) { return hasZero ? "TBA" : w.toFixed(2) + "g"; }
 
-// --- Populate dropdowns ---
-function populateSelect(sel, items, labelFn) {
+// --- Sort all DATA arrays alphabetically by name ---
+function sortData() {
+  Object.keys(DATA).forEach(key => {
+    DATA[key].sort((a, b) => a.name.localeCompare(b.name));
+  });
+}
+
+// --- Searchable dropdown ---
+function makeSearchable(sel, items, labelFn) {
   sel.innerHTML = '<option value="">-- Select --</option>';
   items.forEach((item, i) => {
     const opt = document.createElement("option");
@@ -28,34 +35,124 @@ function populateSelect(sel, items, labelFn) {
     opt.textContent = labelFn(item);
     sel.appendChild(opt);
   });
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "search-dropdown";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "-- Select --";
+  input.autocomplete = "off";
+
+  const list = document.createElement("div");
+  list.className = "dd-list";
+
+  wrapper.appendChild(input);
+  wrapper.appendChild(list);
+  sel.parentNode.insertBefore(wrapper, sel.nextSibling);
+
+  let activeIdx = -1;
+
+  function buildList(filter) {
+    list.innerHTML = "";
+    activeIdx = -1;
+    const query = filter.toLowerCase();
+    let count = 0;
+    items.forEach((item, i) => {
+      const label = labelFn(item);
+      if (query && !label.toLowerCase().includes(query)) return;
+      const div = document.createElement("div");
+      div.className = "dd-item";
+      div.textContent = label;
+      div.addEventListener("mousedown", e => {
+        e.preventDefault();
+        select(i, label);
+      });
+      list.appendChild(div);
+      count++;
+    });
+    if (count === 0) {
+      list.innerHTML = '<div class="dd-empty">No results</div>';
+    }
+  }
+
+  function select(idx, label) {
+    sel.value = idx;
+    sel.dispatchEvent(new Event("change"));
+    input.value = label;
+    close();
+  }
+
+  function open() {
+    buildList(input.value);
+    wrapper.classList.add("open");
+  }
+
+  function close() {
+    wrapper.classList.remove("open");
+    activeIdx = -1;
+  }
+
+  input.addEventListener("focus", open);
+  input.addEventListener("input", () => {
+    buildList(input.value);
+    wrapper.classList.add("open");
+  });
+  input.addEventListener("blur", () => {
+    close();
+    if (sel.value === "") input.value = "";
+  });
+  input.addEventListener("keydown", e => {
+    const items = list.querySelectorAll(".dd-item");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle("active", i === activeIdx));
+      items[activeIdx]?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, 0);
+      items.forEach((el, i) => el.classList.toggle("active", i === activeIdx));
+      items[activeIdx]?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIdx >= 0 && items[activeIdx]) items[activeIdx].dispatchEvent(new MouseEvent("mousedown"));
+    } else if (e.key === "Escape") {
+      close();
+      input.blur();
+    }
+  });
+
+  // Allow clearing
+  wrapper._clear = () => { sel.value = ""; input.value = ""; };
 }
 
 function initDropdowns() {
   // Standard
   const stdForm = document.getElementById("form-standard");
-  populateSelect(stdForm.querySelector('[name="blade"]'), DATA.blades, b => b.name);
-  populateSelect(stdForm.querySelector('[name="ratchet"]'), DATA.ratchets, r => r.name);
-  populateSelect(stdForm.querySelector('[name="bit"]'), DATA.bits, b => b.name);
-  populateSelect(stdForm.querySelector('[name="ratchetBit"]'), DATA.ratchetBits, rb => rb.name);
+  makeSearchable(stdForm.querySelector('[name="blade"]'), DATA.blades, b => b.name);
+  makeSearchable(stdForm.querySelector('[name="ratchet"]'), DATA.ratchets, r => r.name);
+  makeSearchable(stdForm.querySelector('[name="bit"]'), DATA.bits, b => b.name);
+  makeSearchable(stdForm.querySelector('[name="ratchetBit"]'), DATA.ratchetBits, rb => rb.name);
 
   // CX
   const cxForm = document.getElementById("form-cx");
-  populateSelect(cxForm.querySelector('[name="lockChip"]'), DATA.lockChips, lc => lc.name);
-  populateSelect(cxForm.querySelector('[name="mainBlade"]'), DATA.mainBlades, mb => mb.name);
-  populateSelect(cxForm.querySelector('[name="assistBlade"]'), DATA.assistBlades, ab => ab.name);
-  populateSelect(cxForm.querySelector('[name="ratchet"]'), DATA.ratchets, r => r.name);
-  populateSelect(cxForm.querySelector('[name="bit"]'), DATA.bits, b => b.name);
-  populateSelect(cxForm.querySelector('[name="ratchetBit"]'), DATA.ratchetBits, rb => rb.name);
+  makeSearchable(cxForm.querySelector('[name="lockChip"]'), DATA.lockChips, lc => lc.name);
+  makeSearchable(cxForm.querySelector('[name="mainBlade"]'), DATA.mainBlades, mb => mb.name);
+  makeSearchable(cxForm.querySelector('[name="assistBlade"]'), DATA.assistBlades, ab => ab.name);
+  makeSearchable(cxForm.querySelector('[name="ratchet"]'), DATA.ratchets, r => r.name);
+  makeSearchable(cxForm.querySelector('[name="bit"]'), DATA.bits, b => b.name);
+  makeSearchable(cxForm.querySelector('[name="ratchetBit"]'), DATA.ratchetBits, rb => rb.name);
 
   // CX Expand
   const cxeForm = document.getElementById("form-cxExpand");
-  populateSelect(cxeForm.querySelector('[name="lockChip"]'), DATA.lockChips, lc => lc.name);
-  populateSelect(cxeForm.querySelector('[name="metalBlade"]'), DATA.metalBlades, mb => mb.name);
-  populateSelect(cxeForm.querySelector('[name="overBlade"]'), DATA.overBlades, ob => ob.name);
-  populateSelect(cxeForm.querySelector('[name="assistBlade"]'), DATA.assistBlades, ab => ab.name);
-  populateSelect(cxeForm.querySelector('[name="ratchet"]'), DATA.ratchets, r => r.name);
-  populateSelect(cxeForm.querySelector('[name="bit"]'), DATA.bits, b => b.name);
-  populateSelect(cxeForm.querySelector('[name="ratchetBit"]'), DATA.ratchetBits, rb => rb.name);
+  makeSearchable(cxeForm.querySelector('[name="lockChip"]'), DATA.lockChips, lc => lc.name);
+  makeSearchable(cxeForm.querySelector('[name="metalBlade"]'), DATA.metalBlades, mb => mb.name);
+  makeSearchable(cxeForm.querySelector('[name="overBlade"]'), DATA.overBlades, ob => ob.name);
+  makeSearchable(cxeForm.querySelector('[name="assistBlade"]'), DATA.assistBlades, ab => ab.name);
+  makeSearchable(cxeForm.querySelector('[name="ratchet"]'), DATA.ratchets, r => r.name);
+  makeSearchable(cxeForm.querySelector('[name="bit"]'), DATA.bits, b => b.name);
+  makeSearchable(cxeForm.querySelector('[name="ratchetBit"]'), DATA.ratchetBits, rb => rb.name);
 }
 
 // --- Mode tabs ---
@@ -353,4 +450,5 @@ document.getElementById("form-cx").addEventListener("submit", e => { e.preventDe
 document.getElementById("form-cxExpand").addEventListener("submit", e => { e.preventDefault(); calcCXExpand(e.target); });
 
 // --- Init ---
+sortData();
 initDropdowns();
