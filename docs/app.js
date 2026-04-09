@@ -185,7 +185,8 @@ function renderStatTable(label, stats) {
   for (const [k, v] of Object.entries(stats)) {
     rows += `<tr><th>${k}</th><td>${v}</td></tr>`;
   }
-  return `<div class="section-title">${label}</div><table>${rows}</table>`;
+  const title = label ? `<div class="section-title">${label}</div>` : "";
+  return `${title}<table>${rows}</table>`;
 }
 
 function getBarColor(val) {
@@ -232,7 +233,8 @@ function renderResult(res) {
   }
 
   html += renderStatBars(res.grandTotal);
-  html += renderStatTable("Grand Total", res.grandTotal);
+  const { ATK, DEF, STA, ...grandTotalRest } = res.grandTotal;
+  html += renderStatTable("", grandTotalRest);
 
   el.innerHTML = html;
 }
@@ -670,3 +672,24 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
     form.requestSubmit();
   });
 });
+
+// --- Update popup ---
+(function() {
+  const popup = document.getElementById("update-popup");
+  if (!popup) return;
+  const version = popup.dataset.version || "1";
+  const storageKey = "updatePopupSeen";
+  if (localStorage.getItem(storageKey) === version) return;
+
+  popup.classList.remove("hidden");
+  const dismiss = () => {
+    popup.classList.add("hidden");
+    try { localStorage.setItem(storageKey, version); } catch (e) {}
+  };
+  popup.querySelector(".popup-close").addEventListener("click", dismiss);
+  popup.querySelector(".popup-ok").addEventListener("click", dismiss);
+  popup.addEventListener("click", e => { if (e.target === popup) dismiss(); });
+  document.addEventListener("keydown", function onEsc(e) {
+    if (e.key === "Escape") { dismiss(); document.removeEventListener("keydown", onEsc); }
+  });
+})();
