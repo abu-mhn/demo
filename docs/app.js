@@ -543,7 +543,7 @@ sortData();
 initDropdowns();
 
 // --- Blade-specific restrictions (Standard) ---
-(function() {
+(function () {
   const stdForm = document.getElementById("form-standard");
   const bladeSel = stdForm.querySelector('[name="blade"]');
   const ratchetWrapper = stdForm.querySelector('[name="ratchet"]').nextElementSibling;
@@ -639,7 +639,7 @@ function setupModeButton(form, selectName, dataArray) {
   });
 }
 
-(function() {
+(function () {
   const stdForm = document.getElementById("form-standard");
   const cxForm = document.getElementById("form-cx");
   const cxeForm = document.getElementById("form-cxExpand");
@@ -782,7 +782,7 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
 });
 
 // --- Update popup ---
-(function() {
+(function () {
   const popup = document.getElementById("update-popup");
   if (!popup) return;
 
