@@ -81,7 +81,7 @@ const DATA = {
     { name:"Wolf", weight:1.7, codename:"WOLF" },
     { name:"Emperor", weight:4.7, codename:"EMPEROR" },
     { name:"Phoenix", weight:1.7, codename:"PHOENIX" },
-    { name:"Bahamuth", weight:1.7, codename:"BAHAMUT" },
+    { name:"Bahamut", weight:1.7, codename:"BAHAMUT" },
     { name:"Knight", weight:1.7, codename:"KNIGHT" },
     { name:"Ragna", weight:1.7, codename:"RAGNA" },
   ],

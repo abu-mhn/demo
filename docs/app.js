@@ -354,7 +354,7 @@ function calcStandard(form) {
   const bHeight = rb && !isClockMirage ? rb.height : (ratchet ? ratchet.height : null);
 
   renderResult({
-    status: "Success", message: "Combo created successfully", comboName,
+    status: "Success", message: "", comboName,
     type: getType(gAtk, gDef, gSta, isRB),
     grandTotal: {
       ATK: tbaOrVal(gAtk, gAtkZ), DEF: tbaOrVal(gDef, gDefZ), STA: tbaOrVal(gSta, gStaZ),
@@ -431,7 +431,7 @@ function calcCX(form) {
   const totalHeight = (bHeight === 0 || ab.height === 0) ? "TBA" : bHeight + ab.height;
 
   renderResult({
-    status: "Success", message: "Combo created successfully", comboName, type: getType(gAtk, gDef, gSta, isRB),
+    status: "Success", message: "", comboName, type: getType(gAtk, gDef, gSta, isRB),
     grandTotal: {
       ATK: tbaOrVal(gAtk, gAtkZ), DEF: tbaOrVal(gDef, gDefZ), STA: tbaOrVal(gSta, gStaZ),
       ...(mb.modes ? { "Main Blade Mode": mb.modes[mb.currentMode].modeName } : {}),
