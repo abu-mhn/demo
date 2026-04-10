@@ -521,7 +521,7 @@ function calcCXExpand(form) {
   const totalHeight = (bHeight === 0 || ab.height === 0) ? "TBA" : bHeight + ab.height;
 
   renderResult({
-    status: "Success", message: "Combo expanded successfully", comboName, type: getType(gAtk, gDef, gSta, isRB),
+    status: "Success", message: "", comboName, type: getType(gAtk, gDef, gSta, isRB),
     grandTotal: {
       ATK: tbaOrVal(gAtk, gAtkZ), DEF: tbaOrVal(gDef, gDefZ), STA: tbaOrVal(gSta, gStaZ),
       ...(ab.modes ? { "Assist Blade Mode": ab.modes[ab.currentMode].modeName } : {}),
@@ -795,3 +795,5 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
     if (e.key === "Escape") { dismiss(); document.removeEventListener("keydown", onEsc); }
   });
 })();
+
+

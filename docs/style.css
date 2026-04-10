@@ -100,7 +100,7 @@ h1 {
 }
 
 /* optional nicer divider line */
-.separator::before,
+/* .separator::before,
 .separator::after {
     content: "";
     display: inline-block;
@@ -109,7 +109,7 @@ h1 {
     background: #21262d;
     vertical-align: middle;
     margin: 0 10px;
-}
+} */
 
 /* =======================
    FIELDSETS
