@@ -29,9 +29,14 @@
         <img src="assets/line/Expand_Blade_Logo.webp">
       </button>
 
-      <!-- ✅ Library Tab -->
+      <!-- Library Tab -->
       <button class="tab" data-mode="library">
         Library
+      </button>
+
+      <!-- History Tab -->
+      <button class="tab" data-mode="history">
+        History
       </button>
     </div>
 
@@ -83,7 +88,6 @@
             <select name="assistBlade" required></select>
           </label>
         </div>
-
       </fieldset>
 
       <fieldset>
@@ -129,7 +133,6 @@
             <select name="assistBlade" required></select>
           </label>
         </div>
-
       </fieldset>
 
       <fieldset>
@@ -153,7 +156,7 @@
       </div>
     </form>
 
-    <!-- ================= LIBRARY (NEW SEARCH ENGINE) ================= -->
+    <!-- ================= LIBRARY ================= -->
     <form id="form-library" class="calc-form hidden">
       <fieldset>
         <legend>Library Search</legend>
@@ -165,13 +168,20 @@
             Search
           </button>
 
-          <!-- ✅ HELP ICON -->
           <span id="library-help" class="help-icon" title="Click for search commands">
             ?
           </span>
         </div>
 
         <div id="library-results" class="search-results"></div>
+      </fieldset>
+    </form>
+
+    <!-- ================= HISTORY (NEW) ================= -->
+    <form id="form-history" class="calc-form hidden">
+      <fieldset>
+        <legend>History (Last 3 Combos)</legend>
+        <div id="history-list"></div>
       </fieldset>
     </form>
 
@@ -189,7 +199,7 @@
         <li>Added “?” help icon for search command guide.</li>
         <li>Improved Library search UI and result rendering.</li>
         <li>Enhanced CX forms layout and spacing.</li>
-        <li>Support for multiple part categories (blades, ratchets, bits, ratchet-bits, etc.).</li>
+        <li>Added History tab (BX / UX / CX / CX Expand last 3 combos).</li>
       </ul>
       <button type="button" class="btn popup-ok">Got it</button>
     </div>
