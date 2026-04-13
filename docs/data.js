@@ -136,7 +136,7 @@ const DATA = {
     { atk:17, def:17, sta:11, weight:7.8, height:50, spindirection:"R", name:"Heavy", codename:"H" },
     { atk:22, def:15, sta:3, weight:6.6, height:80, spindirection:"R", name:"Zillion", codename:"Z" },
     { atk:10, def:5, sta:25, weight:6.1, height:70, spindirection:"R", name:"Erase", codename:"E" },
-    { atk:0, def:0, sta:0, weight:0, height:0, spindirection:"R", name:"Vertical", codename:"V" },
+    { atk:10, def:25, sta:5, weight:0, height:0, spindirection:"R", name:"Vertical", codename:"V" },
     { atk:30, def:5, sta:5, weight:4.9, height:50, spindirection:"R", name:"Knuckle", codename:"K" },
   ],
 

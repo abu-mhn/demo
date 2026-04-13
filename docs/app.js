@@ -1167,6 +1167,10 @@ function initLibrarySearch() {
     return;
   }
 
+  // =========================
+  // 🧠 BUILD DATA
+  // =========================
+
   const ALL_PARTS = [
     ...(DATA.blades || []),
     ...(DATA.mainBlades || []),
@@ -1180,7 +1184,7 @@ function initLibrarySearch() {
   ].filter(item => item && item.name);
 
   // =========================
-  // 🧠 CORE HELPERS
+  // 🧠 HELPERS
   // =========================
 
   function getFolder(item) {
@@ -1219,7 +1223,7 @@ function initLibrarySearch() {
   }
 
   // =========================
-  // 📊 STATS RENDER (HEIGHT FIXED)
+  // 📊 STATS (0 → TBA)
   // =========================
 
   function renderStats(obj) {
@@ -1228,11 +1232,14 @@ function initLibrarySearch() {
         v !== undefined &&
         v !== null &&
         typeof v !== "object" &&
-        k.toLowerCase() !== "name"   // ✅ REMOVE NAME FROM DATA
+        k.toLowerCase() !== "name"
       )
       .map(([k, v]) => {
 
-        // HEIGHT FIX (÷10 + mm)
+        // 0 → TBA
+        if (v === 0) v = "TBA";
+
+        // height fix
         if (k.toLowerCase() === "height") {
           const num = Number(v);
           if (!isNaN(num)) {
@@ -1240,9 +1247,9 @@ function initLibrarySearch() {
           }
         }
 
-        // weight formatting
+        // weight fix
         if (k.toLowerCase() === "weight") {
-          v = `${v} g`;
+          v = v === "TBA" ? v : `${v} g`;
         }
 
         return `<div class="stat-line"><b>${k.toUpperCase()}:</b> ${v}</div>`;
@@ -1256,18 +1263,17 @@ function initLibrarySearch() {
 
   function formatItem(item) {
     const hasM = hasModes(item);
-
     const index = item.currentMode ?? 0;
     const safeIndex = Math.min(index, hasM ? item.modes.length - 1 : 0);
 
+    const globalIndex = ALL_PARTS.indexOf(item);
     const mode = hasM ? item.modes[safeIndex] : item;
 
     return `
-      <div class="stat-card drag-card"
-        data-name="${item.name}"
+      <div class="stat-card mode-card"
+        data-index="${globalIndex}"
         data-mode-index="${safeIndex}"
       >
-
         <img 
           src="${getImage(item, safeIndex)}"
           alt="${item.name}"
@@ -1293,7 +1299,7 @@ function initLibrarySearch() {
   }
 
   // =========================
-  // 🔍 SEARCH ENGINE
+  // 🔍 SEARCH
   // =========================
 
   function runSearch() {
@@ -1346,16 +1352,16 @@ function initLibrarySearch() {
   }
 
   // =========================
-  // MODE + EVENTS (UNCHANGED)
+  // 🎯 MODE UPDATE
   // =========================
 
   function updateMode(card, item, index) {
-    const mode = item.modes[index];
+    if (!item.modes || !item.modes[index]) return;
 
     card.dataset.modeIndex = index;
 
     card.querySelector(".full-data").innerHTML =
-      renderStats(mode);
+      renderStats(item.modes[index]);
 
     const counter = card.querySelector(".mode-counter");
     if (counter) {
@@ -1368,92 +1374,34 @@ function initLibrarySearch() {
     }
   }
 
-  let dragState = {
-    active: false,
-    startX: 0,
-    card: null
-  };
+  // =========================
+  // 🖱️ CLICK MODE SWITCH (NEW SYSTEM)
+  // =========================
 
-  results.addEventListener("mousedown", (e) => {
-    const card = e.target.closest(".drag-card");
+  results.addEventListener("click", (e) => {
+    const card = e.target.closest(".mode-card");
     if (!card) return;
 
-    const item = ALL_PARTS.find(p => p.name === card.dataset.name);
+    const item = ALL_PARTS[card.dataset.index];
     if (!item || !item.modes) return;
-
-    dragState.active = true;
-    dragState.startX = e.clientX;
-    dragState.card = card;
-  });
-
-  document.addEventListener("mouseup", () => {
-    dragState.active = false;
-    dragState.card = null;
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!dragState.active || !dragState.card) return;
-
-    const item = ALL_PARTS.find(p => p.name === dragState.card.dataset.name);
-    if (!item || !item.modes) return;
-
-    const diff = e.clientX - dragState.startX;
-    if (Math.abs(diff) < 60) return;
-
-    let index = parseInt(dragState.card.dataset.modeIndex || "0");
-
-    if (diff < 0) index = (index + 1) % item.modes.length;
-    else index = (index - 1 + item.modes.length) % item.modes.length;
-
-    updateMode(dragState.card, item, index);
-    dragState.active = false;
-  });
-
-  results.addEventListener("touchstart", (e) => {
-    const card = e.target.closest(".drag-card");
-    if (!card) return;
-
-    const item = ALL_PARTS.find(p => p.name === card.dataset.name);
-    if (!item || !item.modes) return;
-
-    dragState.active = true;
-    dragState.startX = e.touches[0].clientX;
-    dragState.card = card;
-  });
-
-  results.addEventListener("touchend", (e) => {
-    if (!dragState.active || !dragState.card) return;
-
-    const item = ALL_PARTS.find(p => p.name === dragState.card.dataset.name);
-    if (!item || !item.modes) return;
-
-    const diff = e.changedTouches[0].clientX - dragState.startX;
-    if (Math.abs(diff) < 60) return;
-
-    let index = parseInt(dragState.card.dataset.modeIndex || "0");
-
-    if (diff < 0) index = (index + 1) % item.modes.length;
-    else index = (index - 1 + item.modes.length) % item.modes.length;
-
-    updateMode(dragState.card, item, index);
-  });
-
-  results.addEventListener("wheel", (e) => {
-    const card = e.target.closest(".drag-card");
-    if (!card) return;
-
-    const item = ALL_PARTS.find(p => p.name === card.dataset.name);
-    if (!item || !item.modes) return;
-
-    e.preventDefault();
 
     let index = parseInt(card.dataset.modeIndex || "0");
 
-    if (e.deltaY < 0) index = (index - 1 + item.modes.length) % item.modes.length;
-    else index = (index + 1) % item.modes.length;
+    // Shift + click = previous mode
+    if (e.shiftKey) {
+      index = (index - 1 + item.modes.length) % item.modes.length;
+    }
+    // normal click = next mode
+    else {
+      index = (index + 1) % item.modes.length;
+    }
 
     updateMode(card, item, index);
-  }, { passive: false });
+  });
+
+  // =========================
+  // 🚀 EVENTS
+  // =========================
 
   btn.addEventListener("click", runSearch);
 
@@ -1463,6 +1411,8 @@ function initLibrarySearch() {
       runSearch();
     }
   });
+
+  input.addEventListener("input", runSearch);
 }
 
 document.addEventListener("DOMContentLoaded", initLibrarySearch);
@@ -1545,9 +1495,7 @@ function renderHistory() {
   function renderObject(obj) {
     if (!obj) return "";
 
-    // ❌ REMOVE ATK/DEF/STA COMPLETELY
     const EXCLUDE_KEYS = ["ATK", "DEF", "STA"];
-
     const order = ["Height", "Dash", "BurstRes", "Burst Res", "Weight"];
 
     const entries = Object.entries(obj)

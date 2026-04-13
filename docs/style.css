@@ -729,3 +729,18 @@ select {
   opacity: 0.6;
 }
 
+.history-name {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.popup-footer {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  opacity: 0.6;
+  letter-spacing: 0.3px;
+}
