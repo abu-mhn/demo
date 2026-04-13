@@ -1166,6 +1166,9 @@ function initLibrarySearch() {
     return;
   }
 
+  // =========================
+  // DATA MERGE
+  // =========================
   const ALL_PARTS = [
     ...(DATA.blades || []),
     ...(DATA.mainBlades || []),
@@ -1176,41 +1179,73 @@ function initLibrarySearch() {
     ...(DATA.bits || []),
     ...(DATA.lockChips || []),
     ...(DATA.ratchetBits || [])
-  ].filter(item => item && item.name);
+  ].filter(i => i && typeof i.name === "string");
 
+  // =========================
+  // FOLDER DETECTION
+  // =========================
   function getFolder(item) {
-    if (DATA.blades?.includes(item)) return "blades";
-    if (DATA.lockChips?.includes(item)) return "lockChips";
-    if (DATA.ratchetBits?.includes(item)) return "ratchetBits";
-    if (DATA.bits?.includes(item)) return "bits";
-    if (DATA.ratchets?.includes(item)) return "ratchets";
-    if (DATA.mainBlades?.includes(item)) return "mainBlades";
-    if (DATA.assistBlades?.includes(item)) return "assistBlades";
-    if (DATA.metalBlades?.includes(item)) return "metalBlades";
-    if (DATA.overBlades?.includes(item)) return "overBlades";
-    return "misc";
-  }
+    const name = item.name;
 
-  function getBaseName(item) {
-    return (item.name || "")
-      .toLowerCase()
-      .replace(/\s+/g, "")
-      .replace(/-/g, "");
+    if (DATA.blades?.some(i => i.name === name)) return "blades";
+    if (DATA.lockChips?.some(i => i.name === name)) return "lockChips";
+    if (DATA.ratchetBits?.some(i => i.name === name)) return "ratchetBits";
+    if (DATA.bits?.some(i => i.name === name)) return "bits";
+    if (DATA.ratchets?.some(i => i.name === name)) return "ratchets";
+    if (DATA.mainBlades?.some(i => i.name === name)) return "mainBlades";
+    if (DATA.assistBlades?.some(i => i.name === name)) return "assistBlades";
+    if (DATA.metalBlades?.some(i => i.name === name)) return "metalBlades";
+    if (DATA.overBlades?.some(i => i.name === name)) return "overBlades";
+
+    return "misc";
   }
 
   function hasModes(item) {
     return Array.isArray(item.modes) && item.modes.length > 0;
   }
 
-  function getImage(item, index = 0) {
-    const base = getBaseName(item);
-    const folder = getFolder(item);
-
-    return hasModes(item)
-      ? `assets/${folder}/${base}${index}.webp`
-      : `assets/${folder}/${base}.webp`;
+  // =========================
+  // NAME NORMALIZER (IMPORTANT FIX)
+  // =========================
+  function normalizeName(str) {
+    return (str || "")
+      .trim()
+      .replace(/\s+/g, "")   // remove spaces
+      .replace(/-/g, "");    // remove hyphens
   }
 
+  // =========================
+  // IMAGE BUILDER (FIXED)
+  // =========================
+  function getImage(item, index = 0) {
+    const folder = getFolder(item);
+
+    // ✅ ALWAYS use NAME (NOT codename)
+    const baseRaw = item.name;
+
+    const base = normalizeName(baseRaw);
+
+    const fileName = hasModes(item)
+      ? `${base}${index}.webp`
+      : `${base}.webp`;
+
+    const path = `assets/${folder}/${fileName}`;
+
+    // 🔥 DEBUG (VERY IMPORTANT)
+    // console.log("🧠 WEBP DEBUG", {
+    //   name: item.name,
+    //   folder,
+    //   index,
+    //   fileName,
+    //   path
+    // });
+
+    return path;
+  }
+
+  // =========================
+  // STATS
+  // =========================
   function renderStats(obj) {
     return Object.entries(obj)
       .filter(([k, v]) =>
@@ -1236,17 +1271,19 @@ function initLibrarySearch() {
       .join("");
   }
 
+  // =========================
+  // FORMAT ITEM
+  // =========================
   function formatItem(item) {
     const hasM = hasModes(item);
     const index = item.currentMode ?? 0;
     const safeIndex = Math.min(index, hasM ? item.modes.length - 1 : 0);
 
-    const globalIndex = ALL_PARTS.indexOf(item);
     const mode = hasM ? item.modes[safeIndex] : item;
 
     return `
       <div class="stat-card mode-card"
-        data-index="${globalIndex}"
+        data-index="${ALL_PARTS.indexOf(item)}"
         data-mode-index="${safeIndex}"
       >
         <img 
@@ -1273,6 +1310,9 @@ function initLibrarySearch() {
     `;
   }
 
+  // =========================
+  // SEARCH (FIXED SAFE)
+  // =========================
   function runSearch() {
     const q = input.value.trim().toLowerCase();
     results.innerHTML = "";
@@ -1302,11 +1342,11 @@ function initLibrarySearch() {
       }
     } else {
       filtered = ALL_PARTS.filter(p =>
-        p.name.toLowerCase().includes(q)
+        p?.name?.toLowerCase().includes(q)
       );
     }
 
-    if (filtered.length === 0) {
+    if (!filtered.length) {
       results.innerHTML = `<div class="search-item">No results found</div>`;
       results.style.maxHeight = "200px";
       return;
@@ -1322,42 +1362,9 @@ function initLibrarySearch() {
     });
   }
 
-  function updateMode(card, item, index) {
-    if (!item.modes || !item.modes[index]) return;
-
-    card.dataset.modeIndex = index;
-
-    card.querySelector(".full-data").innerHTML =
-      renderStats(item.modes[index]);
-
-    const counter = card.querySelector(".mode-counter");
-    if (counter) {
-      counter.textContent = `${index + 1} / ${item.modes.length}`;
-    }
-
-    const img = card.querySelector("img");
-    if (img) img.src = getImage(item, index);
-  }
-
-  results.addEventListener("click", (e) => {
-    const card = e.target.closest(".mode-card");
-    if (!card) return;
-
-    const item = ALL_PARTS[card.dataset.index];
-    if (!item || !item.modes) return;
-
-    let index = parseInt(card.dataset.modeIndex || "0");
-
-    if (e.shiftKey) {
-      index = (index - 1 + item.modes.length) % item.modes.length;
-    } else {
-      index = (index + 1) % item.modes.length;
-    }
-
-    updateMode(card, item, index);
-  });
-
-  // 🚀 ONLY INPUT TRIGGERS SEARCH
+  // =========================
+  // EVENTS
+  // =========================
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
