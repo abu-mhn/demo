@@ -1159,17 +1159,12 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
 
 function initLibrarySearch() {
   const input = document.getElementById("library-search");
-  const btn = document.getElementById("library-search-btn");
   const results = document.getElementById("library-results");
 
-  if (!input || !btn || !results) {
+  if (!input || !results) {
     console.error("Library elements missing");
     return;
   }
-
-  // =========================
-  // 🧠 BUILD DATA
-  // =========================
 
   const ALL_PARTS = [
     ...(DATA.blades || []),
@@ -1182,10 +1177,6 @@ function initLibrarySearch() {
     ...(DATA.lockChips || []),
     ...(DATA.ratchetBits || [])
   ].filter(item => item && item.name);
-
-  // =========================
-  // 🧠 HELPERS
-  // =========================
 
   function getFolder(item) {
     if (DATA.blades?.includes(item)) return "blades";
@@ -1215,16 +1206,10 @@ function initLibrarySearch() {
     const base = getBaseName(item);
     const folder = getFolder(item);
 
-    if (hasModes(item)) {
-      return `assets/${folder}/${base}${index}.webp`;
-    }
-
-    return `assets/${folder}/${base}.webp`;
+    return hasModes(item)
+      ? `assets/${folder}/${base}${index}.webp`
+      : `assets/${folder}/${base}.webp`;
   }
-
-  // =========================
-  // 📊 STATS (0 → TBA)
-  // =========================
 
   function renderStats(obj) {
     return Object.entries(obj)
@@ -1235,19 +1220,13 @@ function initLibrarySearch() {
         k.toLowerCase() !== "name"
       )
       .map(([k, v]) => {
-
-        // 0 → TBA
         if (v === 0) v = "TBA";
 
-        // height fix
         if (k.toLowerCase() === "height") {
           const num = Number(v);
-          if (!isNaN(num)) {
-            v = `${(num / 10).toFixed(1)} mm`;
-          }
+          if (!isNaN(num)) v = `${(num / 10).toFixed(1)} mm`;
         }
 
-        // weight fix
         if (k.toLowerCase() === "weight") {
           v = v === "TBA" ? v : `${v} g`;
         }
@@ -1256,10 +1235,6 @@ function initLibrarySearch() {
       })
       .join("");
   }
-
-  // =========================
-  // 🎮 FORMAT ITEM
-  // =========================
 
   function formatItem(item) {
     const hasM = hasModes(item);
@@ -1297,10 +1272,6 @@ function initLibrarySearch() {
       </div>
     `;
   }
-
-  // =========================
-  // 🔍 SEARCH
-  // =========================
 
   function runSearch() {
     const q = input.value.trim().toLowerCase();
@@ -1351,10 +1322,6 @@ function initLibrarySearch() {
     });
   }
 
-  // =========================
-  // 🎯 MODE UPDATE
-  // =========================
-
   function updateMode(card, item, index) {
     if (!item.modes || !item.modes[index]) return;
 
@@ -1369,14 +1336,8 @@ function initLibrarySearch() {
     }
 
     const img = card.querySelector("img");
-    if (img) {
-      img.src = getImage(item, index);
-    }
+    if (img) img.src = getImage(item, index);
   }
-
-  // =========================
-  // 🖱️ CLICK MODE SWITCH (NEW SYSTEM)
-  // =========================
 
   results.addEventListener("click", (e) => {
     const card = e.target.closest(".mode-card");
@@ -1387,24 +1348,16 @@ function initLibrarySearch() {
 
     let index = parseInt(card.dataset.modeIndex || "0");
 
-    // Shift + click = previous mode
     if (e.shiftKey) {
       index = (index - 1 + item.modes.length) % item.modes.length;
-    }
-    // normal click = next mode
-    else {
+    } else {
       index = (index + 1) % item.modes.length;
     }
 
     updateMode(card, item, index);
   });
 
-  // =========================
-  // 🚀 EVENTS
-  // =========================
-
-  btn.addEventListener("click", runSearch);
-
+  // 🚀 ONLY INPUT TRIGGERS SEARCH
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
