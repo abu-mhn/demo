@@ -834,18 +834,17 @@ select {
 .color-box-group {
   display: inline-flex;
   gap: 6px;
-  margin-left: 8px;
-  align-items: center; /* keeps alignment stable */
+  margin-left: 6px;
+  align-items: center;
 }
 
 .color-box {
   width: 14px;
   height: 14px;
   border-radius: 3px;
-  border: 1px solid rgba(0,0,0,0.25);
-
   display: inline-block;
 
-  /* 🔥 move a little down */
-  transform: translateY(2.5px);
+  /* 👇 THIS FIXES "a little down" alignment */
+  position: relative;
+  top: 2px;
 }

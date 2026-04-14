@@ -1441,7 +1441,6 @@ function initLibrarySearch() {
     if (!obj) return "";
 
     let html = "";
-
     const EXCLUDE_KEYS = ["name"];
 
     Object.entries(obj).forEach(([k, v]) => {
@@ -1450,19 +1449,31 @@ function initLibrarySearch() {
 
       const key = k.toLowerCase();
 
-      // ================= COLOR FIX (FORCE DETECTION) =================
+      // ================= COLOR (INNER + BORDER) =================
       if (key === "color") {
         const colors = Array.isArray(v) ? v : [v];
 
         html += `
         <div class="stat-line">
           <b>COLOR:</b>
+
           <span class="color-box-group">
-            ${colors
-            .filter(c => c)
-            .map(c => `<span class="color-box" style="background:${c}"></span>`)
-            .join("")}
+            ${colors.map(pair => {
+          const fill = Array.isArray(pair) ? pair[0] : pair;
+          const border = Array.isArray(pair) ? pair[1] : "transparent";
+
+          return `
+                <span class="color-box"
+                  style="
+                    background:${fill};
+                    border:2px solid ${border};
+                    transform: translateY(2px);
+                  ">
+                </span>
+              `;
+        }).join("")}
           </span>
+
         </div>
       `;
         return;
