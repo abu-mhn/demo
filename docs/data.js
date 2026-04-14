@@ -1,6 +1,6 @@
 const DATA = {
   blades: [
-    { atk:55, def:25, sta:20, weight:34.6, spindirection:"R", name:"Dran Sword", codename:"DRANSWORD" },
+    { atk:55, def:25, sta:20, weight:34.6, spindirection:"R", name:"Dran Sword", codename:"DRANSWORD", color: ["#0a4797"] },
     { atk:30, def:35, sta:35, weight:33.0, spindirection:"R", name:"Hells Scythe", codename:"HELLSSCYTHE" },
     { atk:15, def:30, sta:55, weight:31.8, spindirection:"R", name:"Wizard Arrow", codename:"WIZARDARROW" },
     { atk:20, def:55, sta:25, weight:32.4, spindirection:"R", name:"Knight Shield", codename:"KNIGHTSHIELD" },

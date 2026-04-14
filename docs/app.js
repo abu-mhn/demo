@@ -503,6 +503,16 @@ function calcStandard(form) {
   // ================= SAVE HISTORY =================
   saveHistory("BX", {
     comboName,
+    modeData: {
+      bladeMode: bladeModes
+        ? bladeModes[blade._modeIndex]?.modeName
+        : null,
+
+      ratchetBitMode: rbModes
+        ? rbModes[rb._modeIndex]?.modeName
+        : null
+    },
+
     parts: {
       blade: blade.name,
       ratchet: ratchet?.name || null,
@@ -551,20 +561,20 @@ function calcStandard(form) {
 
       ...(bladeModeElExists(bladeModes)
         ? {
-            "Blade Mode": `
+          "Blade Mode": `
               <span class="clickable-mode" data-mode="blade">
                 ${bladeModes[blade._modeIndex].modeName}
               </span>`
-          }
+        }
         : {}),
 
       ...(rbModeElExists(rbModes)
         ? {
-            "Ratchet-Bit Mode": `
+          "Ratchet-Bit Mode": `
               <span class="clickable-mode" data-mode="rb">
                 ${rbModes[rb._modeIndex].modeName}
               </span>`
-          }
+        }
         : {})
     }
   });
@@ -616,7 +626,7 @@ function calcCX(form) {
 
   const isRB = !!rb;
 
-  // ================= MODE SYSTEM =================
+  // ================= MODE =================
   const mbModes = mb?.modes || null;
   const abModes = ab?.modes || null;
   const rbModes = rb?.modes || null;
@@ -648,20 +658,27 @@ function calcCX(form) {
   // ================= BOTTOM =================
   let bAtk = 0, bDef = 0, bSta = 0, bWeight = 0, bHeight = null;
 
+  const abHeight = abA?.height || 0;
+
   if (isRB && rbA) {
     bAtk = rbA.atk || 0;
     bDef = rbA.def || 0;
     bSta = rbA.sta || 0;
     bWeight = rbA.weight || 0;
-    bHeight = rbA.height || null;
+
+    // ⭐ Assist Blade + RatchetBit
+    bHeight = abHeight + (rbA.height || 0);
+
   } else if (bit) {
-    const r = ratchet || { atk: 0, def: 0, sta: 0, weight: 0 };
+    const r = ratchet || { atk: 0, def: 0, sta: 0, weight: 0, height: 0 };
 
     bAtk = r.atk + (bit.atk || 0);
     bDef = r.def + (bit.def || 0);
     bSta = r.sta + (bit.sta || 0);
     bWeight = r.weight + (bit.weight || 0);
-    bHeight = ratchet?.height || null;
+
+    // ⭐ Assist Blade + Ratchet
+    bHeight = abHeight + (r.height || 0);
   }
 
   // ================= GRAND =================
@@ -709,6 +726,21 @@ function calcCX(form) {
   // ================= HISTORY =================
   saveHistory("CX", {
     comboName,
+
+    modeData: {
+      mainBlade: mbModes
+        ? mbModes[mb._modeIndex]?.modeName
+        : null,
+
+      assistBlade: abModes
+        ? abModes[ab._modeIndex]?.modeName
+        : null,
+
+      ratchetBit: rbModes
+        ? rbModes[rb._modeIndex]?.modeName
+        : null
+    },
+
     parts: {
       lockChip: lc.name,
       mainBlade: mbA.name,
@@ -717,12 +749,14 @@ function calcCX(form) {
       bit: bit?.name || null,
       ratchetBit: rb?.name || null
     },
+
     top: {
       ATK: topAtk,
       DEF: topDef,
       STA: topSta,
       Weight: topWeight
     },
+
     bottom: {
       ATK: bAtk,
       DEF: bDef,
@@ -732,6 +766,7 @@ function calcCX(form) {
       Dash: isRB ? rbA?.dash : bit?.dash,
       "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes
     },
+
     grandTotal: {
       ATK: gAtk,
       DEF: gDef,
@@ -779,7 +814,7 @@ function calcCX(form) {
     }
   });
 
-  // ================= AUTO SCROLL (追加) =================
+  // ================= AUTO SCROLL =================
   requestAnimationFrame(() => {
     window.scrollTo({
       top: document.body.scrollHeight,
@@ -825,7 +860,7 @@ function calcCXExpand(form) {
     });
   }
 
-  // ================= MODE SYSTEM =================
+  // ================= MODE =================
   const getActive = (item) => {
     if (!item?.modes?.length) return item;
     if (item._modeIndex == null) item._modeIndex = 0;
@@ -860,6 +895,11 @@ function calcCXExpand(form) {
     topWeight += obA.weight || 0;
   }
 
+  // ================= HEIGHT BASE =================
+  const abHeight = abA?.height || 0;
+  const obHeight = obA?.height || 0;
+  const topHeight = abHeight + obHeight;
+
   // ================= BOTTOM =================
   let bAtk = 0, bDef = 0, bSta = 0, bWeight = 0, bHeight = null;
 
@@ -868,13 +908,18 @@ function calcCXExpand(form) {
     bDef = rbA.def || 0;
     bSta = rbA.sta || 0;
     bWeight = rbA.weight || 0;
-    bHeight = rbA.height || null;
+
+    // ⭐ Total Height = Top + RB
+    bHeight = topHeight + (rbA.height || 0);
+
   } else if (bit && ratchet) {
-    bAtk = ratchet.atk + bit.atk;
-    bDef = ratchet.def + bit.def;
-    bSta = ratchet.sta + bit.sta;
-    bWeight = ratchet.weight + bit.weight;
-    bHeight = ratchet.height;
+    bAtk = (ratchet.atk || 0) + (bit.atk || 0);
+    bDef = (ratchet.def || 0) + (bit.def || 0);
+    bSta = (ratchet.sta || 0) + (bit.sta || 0);
+    bWeight = (ratchet.weight || 0) + (bit.weight || 0);
+
+    // ⭐ Total Height = Top + Ratchet
+    bHeight = topHeight + (ratchet.height || 0);
   }
 
   const bDash = isRB ? rbA?.dash : bit?.dash;
@@ -893,14 +938,21 @@ function calcCXExpand(form) {
     mbA.codename +
     (obA?.codename || "") +
     abA.codename +
-    (isRB ? rbA.codename : ratchet.name + bit.codename);
+    (isRB ? rbA.codename : (ratchet?.name || "") + (bit?.codename || ""));
 
-  const headerId = "comboHeader";
-
-  // ================= HISTORY SAVE =================
+  // ================= HISTORY =================
   saveHistory("CX_EXPAND", {
     comboName,
-    mode: "CX_EXPAND",
+    modeData: {
+      assistBlade: abModes
+        ? abModes[ab._modeIndex]?.modeName
+        : null,
+
+      ratchetBit: rbModes
+        ? rbModes[rb._modeIndex]?.modeName
+        : null
+    },
+
     parts: {
       lockChip: lc.name,
       metalBlade: mbA.name,
@@ -910,31 +962,34 @@ function calcCXExpand(form) {
       bit: bit?.name || null,
       ratchetBit: rb?.name || null
     },
+
     top: {
       ATK: topAtk,
       DEF: topDef,
       STA: topSta,
       Weight: topWeight
     },
+
     bottom: {
       ATK: bAtk,
       DEF: bDef,
       STA: bSta,
       Weight: bWeight,
-      Height: bHeight
+      Height: bHeight ? height(bHeight) : "TBA"
     },
+
     grandTotal: {
       ATK: stat(gAtk),
       DEF: stat(gDef),
       STA: stat(gSta),
-      Height: height(bHeight),
+      Height: bHeight ? height(bHeight) : "TBA",
       Dash: bDash,
       "Burst Res": bBurstRes,
       Weight: weight(gWeight)
     }
-  });
+  });;
 
-  // ================= CLICK MODE HANDLER =================
+  // ================= CLICK MODE =================
   setTimeout(() => {
     document.querySelectorAll(".clickable-mode").forEach(el => {
       el.style.cursor = "pointer";
@@ -983,25 +1038,25 @@ function calcCXExpand(form) {
       "Burst Res": bBurstRes,
       Weight: weight(gWeight),
 
-      ...(mbModes
-        ? { "Metal Blade Mode": `<span class="clickable-mode" data-mode="mb">${mbModes[mb._modeIndex || 0].modeName}</span>` }
-        : {}),
+      ...(mbModes ? {
+        "Metal Blade Mode": `<span class="clickable-mode" data-mode="mb">${mbModes[mb._modeIndex || 0].modeName}</span>`
+      } : {}),
 
-      ...(obModes
-        ? { "Over Blade Mode": `<span class="clickable-mode" data-mode="ob">${obModes[ob._modeIndex || 0].modeName}</span>` }
-        : {}),
+      ...(obModes ? {
+        "Over Blade Mode": `<span class="clickable-mode" data-mode="ob">${obModes[ob._modeIndex || 0].modeName}</span>`
+      } : {}),
 
-      ...(abModes
-        ? { "Assist Blade Mode": `<span class="clickable-mode" data-mode="ab">${abModes[ab._modeIndex || 0].modeName}</span>` }
-        : {}),
+      ...(abModes ? {
+        "Assist Blade Mode": `<span class="clickable-mode" data-mode="ab">${abModes[ab._modeIndex || 0].modeName}</span>`
+      } : {}),
 
-      ...(rbModes
-        ? { "Ratchet-Bit Mode": `<span class="clickable-mode" data-mode="rb">${rbModes[rb._modeIndex || 0].modeName}</span>` }
-        : {})
+      ...(rbModes ? {
+        "Ratchet-Bit Mode": `<span class="clickable-mode" data-mode="rb">${rbModes[rb._modeIndex || 0].modeName}</span>`
+      } : {})
     }
   });
 
-  // ================= AUTO SCROLL（ここ追加） =================
+  // ================= AUTO SCROLL =================
   requestAnimationFrame(() => {
     window.scrollTo({
       top: document.body.scrollHeight,
@@ -1009,6 +1064,7 @@ function calcCXExpand(form) {
     });
   });
 }
+
 // --- Form handlers ---
 document.getElementById("form-standard").addEventListener("submit", e => { e.preventDefault(); calcStandard(e.target); });
 document.getElementById("form-cx").addEventListener("submit", e => { e.preventDefault(); calcCX(e.target); });
@@ -1324,7 +1380,7 @@ function initLibrarySearch() {
   ].filter(i => i && typeof i.name === "string");
 
   // =========================
-  // SAFE INDEX MAP (CRITICAL FIX)
+  // SAFE INDEX MAP
   // =========================
   function getIndex(item) {
     return ALL_PARTS.findIndex(p =>
@@ -1356,7 +1412,7 @@ function initLibrarySearch() {
   }
 
   // =========================
-  // IMAGE BUILDER (FINAL FIX)
+  // IMAGE BUILDER
   // =========================
   function normalize(str) {
     return (str || "")
@@ -1368,79 +1424,95 @@ function initLibrarySearch() {
   function getImage(item, index = 0) {
     const folder = getFolder(item);
 
-    const baseRaw = item.name; // ALWAYS name-based
+    const baseRaw = item.name;
     const base = normalize(baseRaw);
 
     const fileName = hasModes(item)
       ? `${base}${index}.webp`
       : `${base}.webp`;
 
-    const path = `assets/${folder}/${fileName}`;
-
-    console.log("🧠 IMG DEBUG", {
-      name: item.name,
-      folder,
-      fileName,
-      path
-    });
-
-    return path;
+    return `assets/${folder}/${fileName}`;
   }
 
   // =========================
-  // STATS
+  // STATS (🔥 UPDATED WITH COLOR)
   // =========================
   function renderStats(obj) {
-    return Object.entries(obj)
-      .filter(([k, v]) =>
-        v !== undefined &&
-        v !== null &&
-        typeof v !== "object" &&
-        k.toLowerCase() !== "name"
-      )
-      .map(([k, v]) => {
-        if (v === 0) v = "TBA";
+    if (!obj) return "";
 
-        if (k.toLowerCase() === "height") {
-          const num = Number(v);
-          if (!isNaN(num)) v = `${(num / 10).toFixed(1)} mm`;
-        }
+    let html = "";
 
-        if (k.toLowerCase() === "weight") {
-          v = v === "TBA" ? v : `${v} g`;
-        }
+    const EXCLUDE_KEYS = ["name"];
 
-        return `<div class="stat-line"><b>${k.toUpperCase()}:</b> ${v}</div>`;
-      })
-      .join("");
+    Object.entries(obj).forEach(([k, v]) => {
+      if (EXCLUDE_KEYS.includes(k.toLowerCase())) return;
+      if (v === undefined || v === null) return;
+
+      const key = k.toLowerCase();
+
+      // ================= COLOR FIX (FORCE DETECTION) =================
+      if (key === "color") {
+        const colors = Array.isArray(v) ? v : [v];
+
+        html += `
+        <div class="stat-line">
+          <b>COLOR:</b>
+          <span class="color-box-group">
+            ${colors
+            .filter(c => c)
+            .map(c => `<span class="color-box" style="background:${c}"></span>`)
+            .join("")}
+          </span>
+        </div>
+      `;
+        return;
+      }
+
+      // ================= HEIGHT =================
+      if (key === "height") {
+        const num = Number(v);
+        v = !isNaN(num) ? `${(num / 10).toFixed(1)} mm` : v;
+      }
+
+      // ================= WEIGHT =================
+      if (key === "weight") {
+        v = v === 0 ? "TBA" : `${v} g`;
+      }
+
+      html += `
+      <div class="stat-line">
+        <b>${k.toUpperCase()}:</b> ${v}
+      </div>
+    `;
+    });
+
+    return html;
   }
 
   // =========================
-  // FORMAT ITEM (FIXED INDEX)
+  // FORMAT ITEM
   // =========================
   function formatItem(item) {
     const hasM = hasModes(item);
 
     const globalIndex = getIndex(item);
     const index = item.currentMode ?? 0;
-    const safeIndex = Math.min(index, hasM ? item.modes.length - 1 : 0);
 
+    const safeIndex = Math.min(index, hasM ? item.modes.length - 1 : 0);
     const mode = hasM ? item.modes[safeIndex] : item;
 
     return `
       <div class="stat-card mode-card"
         data-index="${globalIndex}"
-        data-mode-index="${safeIndex}"
-      >
+        data-mode-index="${safeIndex}">
+        
         <img 
           src="${getImage(item, safeIndex)}"
-          alt="${item.name}"
           class="part-img"
-          onerror="this.style.display='none'"
         />
 
         <div class="stat-info">
-          <strong>${item.name}</strong><br>
+          <strong>${item.name}</strong>
 
           <div class="full-data">
             ${renderStats(mode)}
@@ -1463,10 +1535,7 @@ function initLibrarySearch() {
     const q = input.value.trim().toLowerCase();
     results.innerHTML = "";
 
-    if (!q) {
-      results.style.maxHeight = "0px";
-      return;
-    }
+    if (!q) return;
 
     let filtered = [];
 
@@ -1483,7 +1552,6 @@ function initLibrarySearch() {
         case "@getalllockchips": filtered = DATA.lockChips || []; break;
         default:
           results.innerHTML = `<div class="search-item">Unknown command</div>`;
-          results.style.maxHeight = "200px";
           return;
       }
     } else {
@@ -1491,14 +1559,6 @@ function initLibrarySearch() {
         p?.name?.toLowerCase().includes(q)
       );
     }
-
-    if (!filtered.length) {
-      results.innerHTML = `<div class="search-item">No results found</div>`;
-      results.style.maxHeight = "200px";
-      return;
-    }
-
-    results.style.maxHeight = "400px";
 
     filtered.slice(0, 100).forEach(item => {
       const div = document.createElement("div");
@@ -1509,7 +1569,7 @@ function initLibrarySearch() {
   }
 
   // =========================
-  // MODE SWITCH (FULL FIX)
+  // MODE SWITCH
   // =========================
   results.addEventListener("click", (e) => {
     const card = e.target.closest(".mode-card");
@@ -1518,15 +1578,10 @@ function initLibrarySearch() {
     const index = Number(card.dataset.index);
     const item = ALL_PARTS[index];
 
-    if (!item || !item.modes) return;
+    if (!item?.modes) return;
 
     let modeIndex = Number(card.dataset.modeIndex || 0);
-
-    if (e.shiftKey) {
-      modeIndex = (modeIndex - 1 + item.modes.length) % item.modes.length;
-    } else {
-      modeIndex = (modeIndex + 1) % item.modes.length;
-    }
+    modeIndex = (modeIndex + 1) % item.modes.length;
 
     card.dataset.modeIndex = modeIndex;
 
@@ -1534,9 +1589,7 @@ function initLibrarySearch() {
       renderStats(item.modes[modeIndex]);
 
     const counter = card.querySelector(".mode-counter");
-    if (counter) {
-      counter.textContent = `${modeIndex + 1} / ${item.modes.length}`;
-    }
+    if (counter) counter.textContent = `${modeIndex + 1} / ${item.modes.length}`;
 
     const img = card.querySelector("img");
     if (img) img.src = getImage(item, modeIndex);
@@ -1633,9 +1686,6 @@ function renderHistory() {
     `;
   }
 
-  // =========================
-  // 🧠 ONLY NON-STAT DATA
-  // =========================
   function renderObject(obj) {
     if (!obj) return "";
 
@@ -1701,6 +1751,25 @@ function renderHistory() {
       ? "TBA"
       : detectType(atk, def, sta);
 
+    // ================= MODE SUPPORT =================
+    const modeData = data.modeData || {};
+
+    const mainBladeMode =
+      modeData.mainBlade ||
+      modeData.bladeMode ||
+      modeData.blade ||
+      null;
+
+    const assistBladeMode =
+      modeData.assistBlade ||
+      modeData.assistBladeMode ||
+      null;
+
+    const rbMode =
+      modeData.ratchetBit ||
+      modeData.ratchetBitMode ||
+      null;
+
     const div = document.createElement("div");
     div.className = "history-item";
 
@@ -1724,6 +1793,30 @@ function renderHistory() {
         ${createBar("STA", sta, isStaTBA)}
 
         ${renderObject(total)}
+
+        ${(mainBladeMode || assistBladeMode || rbMode) ? `
+          <div class="stat-section">
+
+            ${mainBladeMode ? `
+              <div class="stat-line">
+                <b>Main Blade Mode:</b> ${mainBladeMode}
+              </div>
+            ` : ""}
+
+            ${assistBladeMode ? `
+              <div class="stat-line">
+                <b>Assist Blade Mode:</b> ${assistBladeMode}
+              </div>
+            ` : ""}
+
+            ${rbMode ? `
+              <div class="stat-line">
+                <b>Ratchet-Bit Mode:</b> ${rbMode}
+              </div>
+            ` : ""}
+
+          </div>
+        ` : ""}
       </div>
 
       <small>${new Date(item.time).toLocaleString()}</small>
