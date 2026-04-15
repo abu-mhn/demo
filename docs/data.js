@@ -97,6 +97,7 @@ const DATA = {
     { name: "Bahamut", weight: 1.7, codename: "BAHAMUT" },
     { name: "Knight", weight: 1.7, codename: "KNIGHT" },
     { name: "Ragna", weight: 1.7, codename: "RAGNA" },
+    { name: "Unicorn", weight: 1.7, codename: "UNICORN" }
   ],
 
   mainBlades: [
@@ -122,12 +123,14 @@ const DATA = {
     { atk: 25, def: 10, sta: 5, weight: 29.4, spindirection: "R", name: "Blitz", codename: "BLITZ" },
     { atk: 10, def: 20, sta: 10, weight: 27.7, spindirection: "R", name: "Fortress", codename: "FORTRESS" },
     { atk: 10, def: 10, sta: 29, weight: 27.4, spindirection: "R", name: "Rage", codename: "RAGE" },
+    { atk: 0, def: 0, sta: 0, weight: 0, spindirection: "R", name: "Delta", codename: "DELTA" },
   ],
 
   overBlades: [
     { atk: 10, def: 5, sta: 5, weight: 3.8, spindirection: "R", name: "Break", codename: "B" },
     { atk: 5, def: 10, sta: 5, weight: 3.4, spindirection: "R", name: "Guard", codename: "G" },
     { atk: 5, def: 5, sta: 10, weight: 3.7, spindirection: "R", name: "Flow", codename: "F" },
+    { atk: 0, def: 0, sta: 0, weight: 0, spindirection: "R", name: "Peak", codename: "P" },
   ],
 
   assistBlades: [
@@ -157,6 +160,7 @@ const DATA = {
     { atk: 10, def: 5, sta: 25, weight: 6.1, height: 70, spindirection: "R", name: "Erase", codename: "E" },
     { atk: 10, def: 25, sta: 5, weight: 5.4, height: 70, spindirection: "R", name: "Vertical", codename: "V" },
     { atk: 30, def: 5, sta: 5, weight: 4.9, height: 50, spindirection: "R", name: "Knuckle", codename: "K" },
+    { atk: 0, def: 0, sta: 0, weight: 0, height: 0, spindirection: "R", name: "Odd", codename: "O" },
   ],
 
   ratchets: [
@@ -245,6 +249,7 @@ const DATA = {
     { atk: 10, def: 15, sta: 65, dash: 10, burstRes: 30, weight: 4.2, name: "Yielding", codename: "Y" },
     { atk: 50, def: 15, sta: 5, dash: 30, burstRes: 80, weight: 2.4, name: "Ignition", codename: "I" },
     { atk: 40, def: 15, sta: 15, dash: 30, burstRes: 80, weight: 0, name: "Free Flat", codename: "FF" },
+    { atk: 30, def: 20, sta: 20, dash: 30, burstRes: 80, weight: 0, name: "Gear Unite", codename: "GU" }
   ],
 
   ratchetBits: [

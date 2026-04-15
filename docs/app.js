@@ -381,6 +381,19 @@ function formatHeight(val) {
   return `${(Number(val) / 10).toFixed(1)} mm`;
 }
 
+function focusNextField(currentEl) {
+  const focusable = Array.from(
+    document.querySelectorAll('select, input, button')
+  ).filter(el => !el.disabled && el.offsetParent !== null);
+
+  const index = focusable.indexOf(currentEl);
+
+  if (index >= 0 && index < focusable.length - 1) {
+    const next = focusable[index + 1];
+    next?.focus();
+  }
+}
+
 // --- Standard calculation ---
 function calcStandard(form) {
   console.log("calcStandard triggered");
@@ -411,7 +424,14 @@ function calcStandard(form) {
 
   const isRB = !!rb;
 
-  // ================= MODE INIT =================
+  // ================= STAT CHECK =================
+  function hasZeroStat(...parts) {
+    return parts.some(p =>
+      p && (p.atk === 0 || p.def === 0 || p.sta === 0)
+    );
+  }
+
+  // ================= MODE =================
   const bladeModes = blade?.modes?.length ? blade.modes : null;
   const rbModes = rb?.modes?.length ? rb.modes : null;
 
@@ -433,13 +453,6 @@ function calcStandard(form) {
     rbModes ? rbModes[rb._modeIndex] : null
   );
 
-  // ================= FORMAT =================
-  const stat = (v) => (v ?? "TBA");
-  const weight = (w) =>
-    w == null ? "TBA" : `${Number(w).toFixed(1)} g`;
-  const height = (h) =>
-    h == null ? "TBA" : `${(Number(h) / 10).toFixed(1)} mm`;
-
   // ================= BOTTOM =================
   let bAtk = 0, bDef = 0, bSta = 0, bWeight = 0, bHeight = null;
 
@@ -459,10 +472,24 @@ function calcStandard(form) {
     bHeight = ratchet?.height || null;
   }
 
-  // ================= GRAND =================
+  // ================= GRAND TOTAL =================
   const gAtk = (bladeA.atk || 0) + bAtk;
   const gDef = (bladeA.def || 0) + bDef;
   const gSta = (bladeA.sta || 0) + bSta;
+
+  const finalAtk = hasZeroStat(bladeA, ratchet, bit, rbA) ? "TBA" : gAtk;
+  const finalDef = hasZeroStat(bladeA, ratchet, bit, rbA) ? "TBA" : gDef;
+  const finalSta = hasZeroStat(bladeA, ratchet, bit, rbA) ? "TBA" : gSta;
+
+  // ================= WEIGHT =================
+  const selectedParts = [bladeA, ratchet, bit, rbA];
+  const isWeightTBA = selectedParts.some(p => p?.weight === 0);
+
+  const totalWeightRaw = (bladeA.weight || 0) + bWeight;
+
+  const finalWeight = isWeightTBA
+    ? "TBA"
+    : `${totalWeightRaw.toFixed(1)} g`;
 
   const type = getType(gAtk, gDef, gSta, isRB);
 
@@ -474,7 +501,7 @@ function calcStandard(form) {
 
   const headerId = "comboHeader";
 
-  // ================= CLICK MODE SYSTEM =================
+  // ================= MODE CLICK + AUTO NEXT =================
   setTimeout(() => {
     const bladeModeEl = document.querySelector('[data-mode="blade"]');
     const rbModeEl = document.querySelector('[data-mode="rb"]');
@@ -483,8 +510,7 @@ function calcStandard(form) {
       bladeModeEl.style.cursor = "pointer";
       bladeModeEl.onclick = () => {
         if (bladeModes) {
-          blade._modeIndex =
-            (blade._modeIndex + 1) % bladeModes.length;
+          blade._modeIndex = (blade._modeIndex + 1) % bladeModes.length;
           calcStandard(form);
         }
       };
@@ -493,24 +519,32 @@ function calcStandard(form) {
     if (rbModeEl && rbModes) {
       rbModeEl.style.cursor = "pointer";
       rbModeEl.onclick = () => {
-        rb._modeIndex =
-          (rb._modeIndex + 1) % rbModes.length;
+        rb._modeIndex = (rb._modeIndex + 1) % rbModes.length;
         calcStandard(form);
       };
     }
+
+    // ================= AUTO NEXT FIELD =================
+    const selects = form.querySelectorAll('select');
+
+    selects.forEach(select => {
+      select.onchange = () => {
+        calcStandard(form);
+
+        setTimeout(() => {
+          focusNextField(select);
+        }, 80);
+      };
+    });
+
   }, 0);
 
   // ================= SAVE HISTORY =================
   saveHistory("BX", {
     comboName,
     modeData: {
-      bladeMode: bladeModes
-        ? bladeModes[blade._modeIndex]?.modeName
-        : null,
-
-      ratchetBitMode: rbModes
-        ? rbModes[rb._modeIndex]?.modeName
-        : null
+      bladeMode: bladeModes?.[blade._modeIndex]?.modeName || null,
+      ratchetBitMode: rbModes?.[rb._modeIndex]?.modeName || null
     },
 
     parts: {
@@ -521,15 +555,15 @@ function calcStandard(form) {
     },
 
     grandTotal: {
-      ATK: gAtk,
-      DEF: gDef,
-      STA: gSta,
-
-      Height: height(bHeight),
+      ATK: finalAtk,
+      DEF: finalDef,
+      STA: finalSta,
+      Height: bHeight == null
+        ? "TBA"
+        : `${(Number(bHeight) / 10).toFixed(1)} mm`,
       Dash: isRB ? rbA?.dash : bit?.dash,
       "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
-
-      Weight: weight(bladeA.weight + bWeight)
+      Weight: finalWeight
     }
   });
 
@@ -537,6 +571,7 @@ function calcStandard(form) {
   renderResult({
     status: "Success",
     message: "",
+    barState: hasZeroStat(bladeA, ratchet, bit, rbA) ? "grey" : "normal",
 
     comboName: `
       <div id="${headerId}" class="combo-header">
@@ -549,47 +584,39 @@ function calcStandard(form) {
     `,
 
     grandTotal: {
-      ATK: stat(gAtk),
-      DEF: stat(gDef),
-      STA: stat(gSta),
-
-      Height: height(bHeight),
+      ATK: finalAtk,
+      DEF: finalDef,
+      STA: finalSta,
+      Height: bHeight == null
+        ? "TBA"
+        : `${(Number(bHeight) / 10).toFixed(1)} mm`,
       Dash: isRB ? rbA?.dash : bit?.dash,
       "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
+      Weight: finalWeight,
 
-      Weight: weight(bladeA.weight + bWeight),
+      ...(bladeModes ? {
+        "Blade Mode": `
+          <span class="clickable-mode" data-mode="blade">
+            ${bladeModes[blade._modeIndex].modeName}
+          </span>`
+      } : {}),
 
-      ...(bladeModeElExists(bladeModes)
-        ? {
-          "Blade Mode": `
-              <span class="clickable-mode" data-mode="blade">
-                ${bladeModes[blade._modeIndex].modeName}
-              </span>`
-        }
-        : {}),
-
-      ...(rbModeElExists(rbModes)
-        ? {
-          "Ratchet-Bit Mode": `
-              <span class="clickable-mode" data-mode="rb">
-                ${rbModes[rb._modeIndex].modeName}
-              </span>`
-        }
-        : {})
+      ...(rbModes ? {
+        "Ratchet-Bit Mode": `
+          <span class="clickable-mode" data-mode="rb">
+            ${rbModes[rb._modeIndex].modeName}
+          </span>`
+      } : {})
     }
   });
 
-  // ================= AUTO SCROLL (NEW FIX) =================
+  // ================= AUTO SCROLL =================
   requestAnimationFrame(() => {
     window.scrollTo({
       top: document.body.scrollHeight,
       behavior: "smooth"
     });
   });
-
-  // helpers (safe checks)
-  function bladeModeElExists(m) { return m && bladeModes; }
-  function rbModeElExists(m) { return m && rbModes; }
 }
 
 // --- CX calculation ---
@@ -644,31 +671,46 @@ function calcCX(form) {
   const abA = applyMode(ab, abModes?.[ab._modeIndex]);
   const rbA = applyMode(rb, rbModes?.[rb._modeIndex]);
 
-  // ================= FORMAT =================
-  const stat = (v) => (v ?? "TBA");
-  const weight = (w) => (w == null ? "TBA" : `${Number(w).toFixed(1)} g`);
-  const height = (h) => (h == null ? "TBA" : `${(Number(h) / 10).toFixed(1)} mm`);
+  // ================= ZERO CHECK HELPERS =================
+  function hasZeroStat(...parts) {
+    return parts.some(p =>
+      p && (p.atk === 0 || p.def === 0 || p.sta === 0)
+    );
+  }
+
+  function hasZeroWeight(...parts) {
+    return parts.some(p => p && p.weight === 0);
+  }
+
+  function hasZeroHeight(...parts) {
+    return parts.some(p => p && p.height === 0);
+  }
+
+  const isStatTBA = hasZeroStat(mbA, abA, lc, ratchet, bit, rbA);
+  const isWeightTBA = hasZeroWeight(mbA, abA, lc, ratchet, bit, rbA);
+  const isHeightTBA = hasZeroHeight(mbA, abA, lc, ratchet, bit, rbA);
 
   // ================= TOP =================
   const topAtk = (mbA.atk || 0) + (abA.atk || 0);
   const topDef = (mbA.def || 0) + (abA.def || 0);
   const topSta = (mbA.sta || 0) + (abA.sta || 0);
-  const topWeight = (lc.weight || 0) + (mbA.weight || 0) + (abA.weight || 0);
 
-  // ================= BOTTOM =================
-  let bAtk = 0, bDef = 0, bSta = 0, bWeight = 0, bHeight = null;
+  const topWeight =
+    (lc.weight || 0) +
+    (mbA.weight || 0) +
+    (abA.weight || 0);
 
   const abHeight = abA?.height || 0;
+
+  // ================= BOTTOM =================
+  let bAtk = 0, bDef = 0, bSta = 0, bWeight = 0, bHeight = 0;
 
   if (isRB && rbA) {
     bAtk = rbA.atk || 0;
     bDef = rbA.def || 0;
     bSta = rbA.sta || 0;
     bWeight = rbA.weight || 0;
-
-    // ⭐ Assist Blade + RatchetBit
     bHeight = abHeight + (rbA.height || 0);
-
   } else if (bit) {
     const r = ratchet || { atk: 0, def: 0, sta: 0, weight: 0, height: 0 };
 
@@ -676,17 +718,27 @@ function calcCX(form) {
     bDef = r.def + (bit.def || 0);
     bSta = r.sta + (bit.sta || 0);
     bWeight = r.weight + (bit.weight || 0);
-
-    // ⭐ Assist Blade + Ratchet
     bHeight = abHeight + (r.height || 0);
   }
 
   // ================= GRAND =================
-  const gAtk = topAtk + bAtk;
-  const gDef = topDef + bDef;
-  const gSta = topSta + bSta;
+  const gAtk = isStatTBA ? "TBA" : (topAtk + bAtk);
+  const gDef = isStatTBA ? "TBA" : (topDef + bDef);
+  const gSta = isStatTBA ? "TBA" : (topSta + bSta);
 
-  const type = getType(gAtk, gDef, gSta, isRB);
+  const finalWeight = isWeightTBA
+    ? "TBA"
+    : `${(topWeight + bWeight).toFixed(1)} g`;
+
+  const finalHeight = isHeightTBA
+    ? "TBA"
+    : `${(bHeight / 10).toFixed(1)} mm`;
+
+  const barState = isStatTBA ? "grey" : "normal";
+
+  const type = isStatTBA
+    ? null
+    : getType(gAtk, gDef, gSta, isRB);
 
   const comboName =
     lc.codename +
@@ -723,65 +775,12 @@ function calcCX(form) {
     });
   }, 0);
 
-  // ================= HISTORY =================
-  saveHistory("CX", {
-    comboName,
-
-    modeData: {
-      mainBlade: mbModes
-        ? mbModes[mb._modeIndex]?.modeName
-        : null,
-
-      assistBlade: abModes
-        ? abModes[ab._modeIndex]?.modeName
-        : null,
-
-      ratchetBit: rbModes
-        ? rbModes[rb._modeIndex]?.modeName
-        : null
-    },
-
-    parts: {
-      lockChip: lc.name,
-      mainBlade: mbA.name,
-      assistBlade: abA.name,
-      ratchet: ratchet?.name || null,
-      bit: bit?.name || null,
-      ratchetBit: rb?.name || null
-    },
-
-    top: {
-      ATK: topAtk,
-      DEF: topDef,
-      STA: topSta,
-      Weight: topWeight
-    },
-
-    bottom: {
-      ATK: bAtk,
-      DEF: bDef,
-      STA: bSta,
-      Weight: bWeight,
-      Height: bHeight ? height(bHeight) : "TBA",
-      Dash: isRB ? rbA?.dash : bit?.dash,
-      "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes
-    },
-
-    grandTotal: {
-      ATK: gAtk,
-      DEF: gDef,
-      STA: gSta,
-      Height: bHeight ? height(bHeight) : "TBA",
-      Dash: isRB ? rbA?.dash : bit?.dash,
-      "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
-      Weight: weight(topWeight + bWeight)
-    }
-  });
-
   // ================= RESULT =================
   renderResult({
     status: "Success",
     message: "",
+    barState,
+
     comboName: `
       <div id="${headerId}" class="combo-header">
         <div class="combo-inner">
@@ -791,14 +790,16 @@ function calcCX(form) {
         </div>
       </div>
     `,
+
     grandTotal: {
-      ATK: stat(gAtk),
-      DEF: stat(gDef),
-      STA: stat(gSta),
-      Height: height(bHeight),
+      ATK: gAtk,
+      DEF: gDef,
+      STA: gSta,
+      Height: finalHeight,
+      Weight: finalWeight,
+
       Dash: isRB ? rbA?.dash : bit?.dash,
       "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
-      Weight: weight(topWeight + bWeight),
 
       ...(mbModes ? {
         "Main Blade Mode": `<span class="clickable-mode" data-mode="mb">${mbModes[mb._modeIndex].modeName}</span>`
@@ -877,80 +878,99 @@ function calcCXExpand(form) {
   const abModes = ab?.modes || null;
   const rbModes = rb?.modes || null;
 
-  // ================= FORMAT =================
-  const stat = (v) => (v ?? "TBA");
-  const weight = (w) => (w == null ? "TBA" : `${Number(w).toFixed(1)} g`);
-  const height = (h) => (h == null ? "TBA" : `${(Number(h) / 10).toFixed(1)} mm`);
-
-  // ================= TOP =================
-  let topAtk = (mbA.atk || 0) + (abA.atk || 0);
-  let topDef = (mbA.def || 0) + (abA.def || 0);
-  let topSta = (mbA.sta || 0) + (abA.sta || 0);
-  let topWeight = (lc.weight || 0) + (mbA.weight || 0) + (abA.weight || 0);
-
-  if (obA) {
-    topAtk += obA.atk || 0;
-    topDef += obA.def || 0;
-    topSta += obA.sta || 0;
-    topWeight += obA.weight || 0;
+  // ================= TBA CHECK =================
+  function hasZeroStat(...parts) {
+    return parts.some(p =>
+      p && (p.atk === 0 || p.def === 0 || p.sta === 0)
+    );
   }
 
-  // ================= HEIGHT BASE =================
+  function hasZeroWeight(...parts) {
+    return parts.some(p => p && p.weight === 0);
+  }
+
+  function hasZeroHeight(...parts) {
+    return parts.some(p => p && p.height === 0);
+  }
+
+  const isStatTBA = hasZeroStat(mbA, obA, abA, lc, ratchet, bit, rbA);
+  const isWeightTBA = hasZeroWeight(mbA, obA, abA, lc, ratchet, bit, rbA);
+  const isHeightTBA = hasZeroHeight(mbA, obA, abA, lc, ratchet, bit, rbA);
+
+  // ================= TOP =================
+  let topAtk = (mbA.atk || 0) + (abA.atk || 0) + (obA?.atk || 0 || 0);
+  let topDef = (mbA.def || 0) + (abA.def || 0) + (obA?.def || 0 || 0);
+  let topSta = (mbA.sta || 0) + (abA.sta || 0) + (obA?.sta || 0 || 0);
+
+  let topWeight =
+    (lc.weight || 0) +
+    (mbA.weight || 0) +
+    (abA.weight || 0) +
+    (obA?.weight || 0 || 0);
+
   const abHeight = abA?.height || 0;
   const obHeight = obA?.height || 0;
   const topHeight = abHeight + obHeight;
 
   // ================= BOTTOM =================
-  let bAtk = 0, bDef = 0, bSta = 0, bWeight = 0, bHeight = null;
+  let bAtk = 0, bDef = 0, bSta = 0, bWeight = 0, bHeight = 0;
 
   if (isRB && rbA) {
     bAtk = rbA.atk || 0;
     bDef = rbA.def || 0;
     bSta = rbA.sta || 0;
     bWeight = rbA.weight || 0;
-
-    // ⭐ Total Height = Top + RB
     bHeight = topHeight + (rbA.height || 0);
+  } else if (bit) {
+    const r = ratchet || { atk: 0, def: 0, sta: 0, weight: 0, height: 0 };
 
-  } else if (bit && ratchet) {
-    bAtk = (ratchet.atk || 0) + (bit.atk || 0);
-    bDef = (ratchet.def || 0) + (bit.def || 0);
-    bSta = (ratchet.sta || 0) + (bit.sta || 0);
-    bWeight = (ratchet.weight || 0) + (bit.weight || 0);
-
-    // ⭐ Total Height = Top + Ratchet
-    bHeight = topHeight + (ratchet.height || 0);
+    bAtk = r.atk + (bit.atk || 0);
+    bDef = r.def + (bit.def || 0);
+    bSta = r.sta + (bit.sta || 0);
+    bWeight = r.weight + (bit.weight || 0);
+    bHeight = topHeight + (r.height || 0);
   }
 
   const bDash = isRB ? rbA?.dash : bit?.dash;
   const bBurstRes = isRB ? rbA?.burstRes : bit?.burstRes;
 
   // ================= GRAND =================
-  const gAtk = topAtk + bAtk;
-  const gDef = topDef + bDef;
-  const gSta = topSta + bSta;
-  const gWeight = topWeight + bWeight;
+  const gAtk = isStatTBA ? "TBA" : (topAtk + bAtk);
+  const gDef = isStatTBA ? "TBA" : (topDef + bDef);
+  const gSta = isStatTBA ? "TBA" : (topSta + bSta);
 
-  const type = getType(gAtk, gDef, gSta, isRB);
+  const gWeightRaw = topWeight + bWeight;
+
+  const gWeight = isWeightTBA
+    ? "TBA"
+    : gWeightRaw;
+
+  const gHeight = isHeightTBA
+    ? "TBA"
+    : (bHeight / 10).toFixed(1);
+
+  // ================= TYPE =================
+  const type = isStatTBA
+    ? null
+    : getType(gAtk, gDef, gSta, isRB);
 
   const comboName =
     lc.codename +
     mbA.codename +
     (obA?.codename || "") +
     abA.codename +
-    (isRB ? rbA.codename : (ratchet?.name || "") + (bit?.codename || ""));
+    (isRB
+      ? rbA.codename
+      : (ratchet?.name || "") + (bit?.codename || ""));
 
-  // ================= HISTORY =================
+  const headerId = "comboHeader";
+
+  // ================= HISTORY (FIXED) =================
   saveHistory("CX_EXPAND", {
     comboName,
     modeData: {
-      assistBlade: abModes
-        ? abModes[ab._modeIndex]?.modeName
-        : null,
-
-      ratchetBit: rbModes
-        ? rbModes[rb._modeIndex]?.modeName
-        : null
+      assistBlade: abModes?.[ab._modeIndex]?.modeName || null,
+      ratchetBit: rbModes?.[rb._modeIndex]?.modeName || null
     },
 
     parts: {
@@ -967,61 +987,33 @@ function calcCXExpand(form) {
       ATK: topAtk,
       DEF: topDef,
       STA: topSta,
-      Weight: topWeight
+      Weight: formatWeight(topWeight)
     },
 
     bottom: {
       ATK: bAtk,
       DEF: bDef,
       STA: bSta,
-      Weight: bWeight,
-      Height: bHeight ? height(bHeight) : "TBA"
+      Weight: formatWeight(bWeight),
+      Height: isHeightTBA ? "TBA" : `${gHeight} mm`
     },
 
     grandTotal: {
-      ATK: stat(gAtk),
-      DEF: stat(gDef),
-      STA: stat(gSta),
-      Height: bHeight ? height(bHeight) : "TBA",
+      ATK: gAtk,
+      DEF: gDef,
+      STA: gSta,
+      Weight: formatWeight(gWeight),
+      Height: isHeightTBA ? "TBA" : `${gHeight} mm`,
       Dash: bDash,
-      "Burst Res": bBurstRes,
-      Weight: weight(gWeight)
+      "Burst Res": bBurstRes
     }
-  });;
-
-  // ================= CLICK MODE =================
-  setTimeout(() => {
-    document.querySelectorAll(".clickable-mode").forEach(el => {
-      el.style.cursor = "pointer";
-
-      el.onclick = () => {
-        const mode = el.dataset.mode;
-
-        if (mode === "mb" && mbModes?.length) {
-          mb._modeIndex = (mb._modeIndex + 1) % mbModes.length;
-        }
-
-        if (mode === "ob" && obModes?.length) {
-          ob._modeIndex = (ob._modeIndex + 1) % obModes.length;
-        }
-
-        if (mode === "ab" && abModes?.length) {
-          ab._modeIndex = (ab._modeIndex + 1) % abModes.length;
-        }
-
-        if (mode === "rb" && rbModes?.length) {
-          rb._modeIndex = (rb._modeIndex + 1) % rbModes.length;
-        }
-
-        calcCXExpand(form);
-      };
-    });
-  }, 0);
+  });
 
   // ================= RESULT =================
   renderResult({
     status: "Success",
     message: "",
+
     comboName: `
       <div class="combo-header">
         <span>${comboName}</span>
@@ -1029,14 +1021,15 @@ function calcCXExpand(form) {
         ${spinLogo(mbA.spindirection)}
       </div>
     `,
+
     grandTotal: {
-      ATK: stat(gAtk),
-      DEF: stat(gDef),
-      STA: stat(gSta),
-      Height: height(bHeight),
+      ATK: gAtk,
+      DEF: gDef,
+      STA: gSta,
+      Weight: formatWeight(gWeight),
+      Height: isHeightTBA ? "TBA" : `${gHeight} mm`,
       Dash: bDash,
       "Burst Res": bBurstRes,
-      Weight: weight(gWeight),
 
       ...(mbModes ? {
         "Metal Blade Mode": `<span class="clickable-mode" data-mode="mb">${mbModes[mb._modeIndex || 0].modeName}</span>`
@@ -1424,8 +1417,7 @@ function initLibrarySearch() {
   function getImage(item, index = 0) {
     const folder = getFolder(item);
 
-    const baseRaw = item.name;
-    const base = normalize(baseRaw);
+    const base = normalize(item.name);
 
     const fileName = hasModes(item)
       ? `${base}${index}.webp`
@@ -1435,7 +1427,7 @@ function initLibrarySearch() {
   }
 
   // =========================
-  // STATS (🔥 UPDATED WITH COLOR)
+  // STATS (UPDATED)
   // =========================
   function renderStats(obj) {
     if (!obj) return "";
@@ -1454,40 +1446,36 @@ function initLibrarySearch() {
         const colors = Array.isArray(v) ? v : [v];
 
         html += `
-    <div class="stat-line">
-      <b>COLOR:</b>
-
-      <span class="color-box-group">
-        ${colors.map(c => {
+          <div class="stat-line">
+            <b>COLOR:</b>
+            <span class="color-box-group">
+              ${colors.map(c => {
           const fill = c?.[0] || "transparent";
           const dot = c?.[1] || "#ffffff";
           const border = c?.[2] || "transparent";
 
           return `
-            <span class="color-box"
-              style="
-                background:${fill};
-                border:2px solid ${border};
-                transform: translateY(2px);
-              ">
-
-              <span class="color-dot"
-                style="background:${dot};">
-              </span>
-
-            </span>
-          `;
+                  <span class="color-box"
+                    style="background:${fill}; border:2px solid ${border}; transform: translateY(2px);">
+                    <span class="color-dot" style="background:${dot};"></span>
+                  </span>
+                `;
         }).join("")}
-      </span>
-
-    </div>
-  `;
+            </span>
+          </div>
+        `;
         return;
       }
-      // ================= HEIGHT =================
+
+      // ================= TBA LOGIC =================
+      if (["atk", "def", "sta"].includes(key)) {
+        const num = Number(v);
+        v = num === 0 ? "TBA" : v;
+      }
+
       if (key === "height") {
         const num = Number(v);
-        v = !isNaN(num) ? `${(num / 10).toFixed(1)} mm` : v;
+        v = num === 0 ? "TBA" : `${(num / 10).toFixed(1)} mm`;
       }
 
       // ================= WEIGHT =================
@@ -1496,10 +1484,10 @@ function initLibrarySearch() {
       }
 
       html += `
-      <div class="stat-line">
-        <b>${k.toUpperCase()}:</b> ${v}
-      </div>
-    `;
+        <div class="stat-line">
+          <b>${k.toUpperCase()}:</b> ${v}
+        </div>
+      `;
     });
 
     return html;
@@ -1522,10 +1510,7 @@ function initLibrarySearch() {
         data-index="${globalIndex}"
         data-mode-index="${safeIndex}">
         
-        <img 
-          src="${getImage(item, safeIndex)}"
-          class="part-img"
-        />
+        <img src="${getImage(item, safeIndex)}" class="part-img"/>
 
         <div class="stat-info">
           <strong>${item.name}</strong>

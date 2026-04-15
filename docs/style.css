@@ -807,12 +807,25 @@ select {
 }
 
 .footer-inner {
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;   /* 🔥 key fix */
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
   text-align: center;
 }
 
 .footer-inner span {
-  display: inline;
+  display: flex;
+  align-items: center;   /* keeps text aligned with image */
+  gap: 4px;
+}
+
+.footer-inner img {
+  height: 40px;
+  width: auto;
+  transform: translateY(-5px); /* move up */
 }
 
 .footer-dot {
@@ -861,4 +874,12 @@ select {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+}
+
+.footer-inner a img {
+  transition: transform 0.2s ease;
+}
+
+.footer-inner a:hover img {
+  transform: translateY(-2px) scale(1.05);
 }

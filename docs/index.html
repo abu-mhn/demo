@@ -4,6 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ================= FAVICON (UPDATED) ================= -->
+  <!-- Main favicon (modern browsers) -->
+  <link rel="icon" type="image/webp" href="assets/icons/revox.webp">
+
+  <!-- Fallback (recommended for full compatibility) -->
+  <link rel="icon" type="image/png" href="assets/icons/revox.png">
+
+  <!-- Apple touch icon -->
+  <link rel="apple-touch-icon" href="assets/icons/revox.png">
+
+  <!-- Optional theme color -->
+  <meta name="theme-color" content="#0a4797">
+
   <title>Beyblade X Stat Calculator</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -205,11 +219,14 @@
     <div class="footer-inner">
       <span>Beyblade X Stat Calculator</span>
       <span class="footer-dot">•</span>
-      <span>Created by <strong>AB</strong></span>
+      <span>Created by <strong>RvX Ashwolf</strong></span>
+      <span class="footer-dot">•</span>
+      <span>Powered by <a href="https://teamrevox.com/" target="_blank" rel="noopener noreferrer"><img
+            src="assets/icons/revoxName.webp" alt="Revox"></a></span>
     </div>
   </footer>
 
-  <!-- ================= POPUP (UPDATE) ================= -->
+  <!-- ================= POPUP ================= -->
   <div id="update-popup" class="popup-overlay hidden" data-version="2026-04-09">
     <div class="popup-card">
 
@@ -218,10 +235,11 @@
       <h2 class="popup-title">What's New</h2>
 
       <ul class="popup-list">
-        <li>Fixed buttons width for Calculator, Reset and Random.</li>
-        <li>Fixed combo name to make it smaller.</li>
-        <li>Added data for modes in history.</li>
-        <li>Added color variation of parts (still in progress).</li>
+        <li>Added auto-next form navigation (blade → ratchet → bit → ratchetBit).</li>
+        <li>Fixed TBA logic for stats, weight, and height when any part has 0 value.</li>
+        <li>Improved form flow stability and prevented duplicate event binding.</li>
+        <li>Updated footer and website icon.</li>
+        <li>Added <strong>Unicorn</strong>, <strong>Delta</strong>, <strong>Peak</strong>, <strong>Odd</strong> and <strong>Gear Unite</strong> in data collection.</li>
       </ul>
 
       <button type="button" class="btn popup-ok">
