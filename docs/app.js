@@ -381,19 +381,6 @@ function formatHeight(val) {
   return `${(Number(val) / 10).toFixed(1)} mm`;
 }
 
-function focusNextField(currentEl) {
-  const focusable = Array.from(
-    document.querySelectorAll('select, input, button')
-  ).filter(el => !el.disabled && el.offsetParent !== null);
-
-  const index = focusable.indexOf(currentEl);
-
-  if (index >= 0 && index < focusable.length - 1) {
-    const next = focusable[index + 1];
-    next?.focus();
-  }
-}
-
 // --- Standard calculation ---
 function calcStandard(form) {
   console.log("calcStandard triggered");
@@ -477,12 +464,17 @@ function calcStandard(form) {
   const gDef = (bladeA.def || 0) + bDef;
   const gSta = (bladeA.sta || 0) + bSta;
 
-  const finalAtk = hasZeroStat(bladeA, ratchet, bit, rbA) ? "TBA" : gAtk;
-  const finalDef = hasZeroStat(bladeA, ratchet, bit, rbA) ? "TBA" : gDef;
-  const finalSta = hasZeroStat(bladeA, ratchet, bit, rbA) ? "TBA" : gSta;
+  // ================= STAT TBA =================
+  const isStatTBA = hasZeroStat(bladeA, ratchet, bit, rbA);
+  const barState = isStatTBA ? "grey" : "normal";
 
-  // ================= WEIGHT =================
+  const finalAtk = isStatTBA ? "TBA" : gAtk;
+  const finalDef = isStatTBA ? "TBA" : gDef;
+  const finalSta = isStatTBA ? "TBA" : gSta;
+
+  // ================= WEIGHT TBA (FIXED) =================
   const selectedParts = [bladeA, ratchet, bit, rbA];
+
   const isWeightTBA = selectedParts.some(p => p?.weight === 0);
 
   const totalWeightRaw = (bladeA.weight || 0) + bWeight;
@@ -491,6 +483,7 @@ function calcStandard(form) {
     ? "TBA"
     : `${totalWeightRaw.toFixed(1)} g`;
 
+  // ================= TYPE =================
   const type = getType(gAtk, gDef, gSta, isRB);
 
   const comboName =
@@ -501,7 +494,7 @@ function calcStandard(form) {
 
   const headerId = "comboHeader";
 
-  // ================= MODE CLICK + AUTO NEXT =================
+  // ================= MODE CLICK =================
   setTimeout(() => {
     const bladeModeEl = document.querySelector('[data-mode="blade"]');
     const rbModeEl = document.querySelector('[data-mode="rb"]');
@@ -510,7 +503,8 @@ function calcStandard(form) {
       bladeModeEl.style.cursor = "pointer";
       bladeModeEl.onclick = () => {
         if (bladeModes) {
-          blade._modeIndex = (blade._modeIndex + 1) % bladeModes.length;
+          blade._modeIndex =
+            (blade._modeIndex + 1) % bladeModes.length;
           calcStandard(form);
         }
       };
@@ -519,32 +513,23 @@ function calcStandard(form) {
     if (rbModeEl && rbModes) {
       rbModeEl.style.cursor = "pointer";
       rbModeEl.onclick = () => {
-        rb._modeIndex = (rb._modeIndex + 1) % rbModes.length;
+        rb._modeIndex =
+          (rb._modeIndex + 1) % rbModes.length;
         calcStandard(form);
       };
     }
-
-    // ================= AUTO NEXT FIELD =================
-    const selects = form.querySelectorAll('select');
-
-    selects.forEach(select => {
-      select.onchange = () => {
-        calcStandard(form);
-
-        setTimeout(() => {
-          focusNextField(select);
-        }, 80);
-      };
-    });
-
   }, 0);
 
   // ================= SAVE HISTORY =================
   saveHistory("BX", {
     comboName,
     modeData: {
-      bladeMode: bladeModes?.[blade._modeIndex]?.modeName || null,
-      ratchetBitMode: rbModes?.[rb._modeIndex]?.modeName || null
+      bladeMode: bladeModes
+        ? bladeModes[blade._modeIndex]?.modeName
+        : null,
+      ratchetBitMode: rbModes
+        ? rbModes[rb._modeIndex]?.modeName
+        : null
     },
 
     parts: {
@@ -558,11 +543,14 @@ function calcStandard(form) {
       ATK: finalAtk,
       DEF: finalDef,
       STA: finalSta,
+
       Height: bHeight == null
         ? "TBA"
         : `${(Number(bHeight) / 10).toFixed(1)} mm`,
+
       Dash: isRB ? rbA?.dash : bit?.dash,
       "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
+
       Weight: finalWeight
     }
   });
@@ -571,7 +559,7 @@ function calcStandard(form) {
   renderResult({
     status: "Success",
     message: "",
-    barState: hasZeroStat(bladeA, ratchet, bit, rbA) ? "grey" : "normal",
+    barState,
 
     comboName: `
       <div id="${headerId}" class="combo-header">
@@ -587,26 +575,33 @@ function calcStandard(form) {
       ATK: finalAtk,
       DEF: finalDef,
       STA: finalSta,
+
       Height: bHeight == null
         ? "TBA"
         : `${(Number(bHeight) / 10).toFixed(1)} mm`,
+
       Dash: isRB ? rbA?.dash : bit?.dash,
       "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
+
       Weight: finalWeight,
 
-      ...(bladeModes ? {
-        "Blade Mode": `
-          <span class="clickable-mode" data-mode="blade">
-            ${bladeModes[blade._modeIndex].modeName}
-          </span>`
-      } : {}),
+      ...(bladeModes
+        ? {
+          "Blade Mode": `
+              <span class="clickable-mode" data-mode="blade">
+                ${bladeModes[blade._modeIndex].modeName}
+              </span>`
+        }
+        : {}),
 
-      ...(rbModes ? {
-        "Ratchet-Bit Mode": `
-          <span class="clickable-mode" data-mode="rb">
-            ${rbModes[rb._modeIndex].modeName}
-          </span>`
-      } : {})
+      ...(rbModes
+        ? {
+          "Ratchet-Bit Mode": `
+              <span class="clickable-mode" data-mode="rb">
+                ${rbModes[rb._modeIndex].modeName}
+              </span>`
+        }
+        : {})
     }
   });
 
@@ -617,6 +612,10 @@ function calcStandard(form) {
       behavior: "smooth"
     });
   });
+
+  // helpers
+  function bladeModeElExists(m) { return m && bladeModes; }
+  function rbModeElExists(m) { return m && rbModes; }
 }
 
 // --- CX calculation ---
@@ -678,15 +677,8 @@ function calcCX(form) {
     return parts.some(p => p && p.weight === 0);
   }
 
-  function hasZeroHeight(...parts) {
-    return parts.some(p => p && p.height === 0);
-  }
-
   const isStatTBA = hasZeroStat(mbA, abA, lc, ratchet, bit, rbA);
   const isWeightTBA = hasZeroWeight(mbA, abA, lc, ratchet, bit, rbA);
-  const isHeightTBA = hasZeroHeight(mbA, abA, lc, ratchet, bit, rbA);
-
-  const stat = v => (isStatTBA ? "TBA" : v);
 
   const formatWeight = (v) =>
     v === null || v === undefined || v === "TBA"
@@ -733,7 +725,7 @@ function calcCX(form) {
   const gSta = isStatTBA ? "TBA" : topSta + bSta;
 
   const gWeight = isWeightTBA ? "TBA" : topWeight + bWeight;
-  const gHeight = isHeightTBA ? "TBA" : bHeight;
+  const gHeight = bHeight;
 
   const type = isStatTBA ? null : getType(gAtk, gDef, gSta, isRB);
 
@@ -745,9 +737,15 @@ function calcCX(form) {
       ? rbA.codename
       : (ratchet?.name || "") + (bit?.codename || ""));
 
-  // ================= HISTORY (NEW) =================
+  // ================= HISTORY (FIXED + COMPLETE) =================
   saveHistory("CX", {
     comboName,
+
+    modeData: {
+      mainBladeMode: mbModes?.[mb._modeIndex]?.modeName || null,
+      assistBladeMode: abModes?.[ab._modeIndex]?.modeName || null,
+      ratchetBitMode: rbModes?.[rb._modeIndex]?.modeName || null
+    },
 
     parts: {
       lockChip: lc.name,
@@ -771,24 +769,20 @@ function calcCX(form) {
 
   // ================= MODE CLICK =================
   setTimeout(() => {
-    document.querySelectorAll(".clickable-mode").forEach(el => {
+    const bind = (selector, arr, obj) => {
+      const el = document.querySelector(selector);
+      if (!el || !arr) return;
+
       el.style.cursor = "pointer";
-
       el.onclick = () => {
-        const mode = el.dataset.mode;
-
-        if (mode === "mb" && mbModes)
-          mb._modeIndex = (mb._modeIndex + 1) % mbModes.length;
-
-        if (mode === "ab" && abModes)
-          ab._modeIndex = (ab._modeIndex + 1) % abModes.length;
-
-        if (mode === "rb" && rbModes)
-          rb._modeIndex = (rb._modeIndex + 1) % rbModes.length;
-
+        obj._modeIndex = (obj._modeIndex + 1) % arr.length;
         calcCX(form);
       };
-    });
+    };
+
+    bind('[data-mode="mb"]', mbModes, mb);
+    bind('[data-mode="ab"]', abModes, ab);
+    bind('[data-mode="rb"]', rbModes, rb);
   }, 0);
 
   // ================= RESULT =================
@@ -811,6 +805,7 @@ function calcCX(form) {
       STA: gSta,
       Weight: formatWeight(gWeight),
       Height: formatHeight(gHeight),
+
       Dash: isRB ? rbA?.dash : bit?.dash,
       "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
 
@@ -828,7 +823,7 @@ function calcCX(form) {
     }
   });
 
-  // ================= AUTO SCROLL =================
+  // ================= AUTO SCROLL ONLY HERE =================
   requestAnimationFrame(() => {
     window.scrollTo({
       top: document.body.scrollHeight,
@@ -1098,6 +1093,7 @@ document.addEventListener("click", (e) => {
 
   calcCXExpand(form);
 });
+
 // --- Form handlers ---
 document.getElementById("form-standard").addEventListener("submit", e => { e.preventDefault(); calcStandard(e.target); });
 document.getElementById("form-cx").addEventListener("submit", e => { e.preventDefault(); calcCX(e.target); });
