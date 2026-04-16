@@ -472,13 +472,15 @@ select {
     font-weight: 600;
 }
 
-/* Lock the Ratchet / Ratchet-Bit chooser to viewport center */
+/* Lock the Ratchet / Ratchet-Bit chooser to viewport center (mobile-safe) */
 #bottom-choice-popup {
     position: fixed;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 100vw;
+    height: 100dvh;
+    padding: 0;
+    overflow: visible;
+    display: block;
 }
 
 #bottom-choice-popup.hidden {
@@ -486,7 +488,27 @@ select {
 }
 
 #bottom-choice-popup .popup-card {
-    margin: auto;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    width: min(420px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    animation: bottomChoiceRise .22s ease-out;
+}
+
+@keyframes bottomChoiceRise {
+    from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 12px));
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
 }
 
 /* =======================

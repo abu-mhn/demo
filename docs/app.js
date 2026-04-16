@@ -77,6 +77,12 @@ const NEXT_DROPDOWN = {
 function advanceToNext(sel) {
   const form = sel.closest("form");
   if (!form) return;
+
+  // Skip auto-advance / popup once a result is displayed (i.e. after calculate or random).
+  // User is tweaking existing selections, not walking the initial flow.
+  const result = document.getElementById("result");
+  if (result && !result.classList.contains("hidden")) return;
+
   const map = NEXT_DROPDOWN[form.id];
   if (!map) return;
   const next = map[sel.getAttribute("name")];
@@ -644,14 +650,14 @@ function calcStandard(form) {
       DEF: finalDef,
       STA: finalSta,
 
+      Weight: finalWeight,
+
       Height: bHeight == null
         ? "TBA"
         : `${(Number(bHeight) / 10).toFixed(1)} mm`,
 
       Dash: isRB ? rbA?.dash : bit?.dash,
-      "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
-
-      Weight: finalWeight
+      "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes
     }
   });
 
@@ -676,14 +682,14 @@ function calcStandard(form) {
       DEF: finalDef,
       STA: finalSta,
 
+      Weight: finalWeight,
+
       Height: bHeight == null
         ? "TBA"
         : `${(Number(bHeight) / 10).toFixed(1)} mm`,
 
       Dash: isRB ? rbA?.dash : bit?.dash,
       "Burst Res": isRB ? rbA?.burstRes : bit?.burstRes,
-
-      Weight: finalWeight,
 
       ...(bladeModes
         ? {
@@ -1829,7 +1835,7 @@ function renderHistory() {
     if (!obj) return "";
 
     const EXCLUDE_KEYS = ["ATK", "DEF", "STA"];
-    const order = ["Height", "Dash", "BurstRes", "Burst Res", "Weight"];
+    const order = ["Weight", "Height", "Dash", "BurstRes", "Burst Res"];
 
     const entries = Object.entries(obj)
       .filter(([key]) => !EXCLUDE_KEYS.includes(key));
