@@ -46,6 +46,113 @@ function sortData() {
   });
 }
 
+// --- Auto-advance flow: map which dropdown to focus after the current one ---
+// "__BOTTOM__" = scroll to Bottom fieldset but let the user choose Ratchet or Ratchet-Bit
+const NEXT_DROPDOWN = {
+  "form-standard": {
+    blade: "__BOTTOM__",
+    ratchet: "bit",
+    bit: null,
+    ratchetBit: null
+  },
+  "form-cx": {
+    lockChip: "mainBlade",
+    mainBlade: "assistBlade",
+    assistBlade: "__BOTTOM__",
+    ratchet: "bit",
+    bit: null,
+    ratchetBit: null
+  },
+  "form-cxExpand": {
+    lockChip: "metalBlade",
+    metalBlade: "overBlade",
+    overBlade: "assistBlade",
+    assistBlade: "__BOTTOM__",
+    ratchet: "bit",
+    bit: null,
+    ratchetBit: null
+  }
+};
+
+function advanceToNext(sel) {
+  const form = sel.closest("form");
+  if (!form) return;
+  const map = NEXT_DROPDOWN[form.id];
+  if (!map) return;
+  const next = map[sel.getAttribute("name")];
+  if (next == null) return;
+
+  if (next === "__BOTTOM__") {
+    const bottomFieldset = Array.from(form.querySelectorAll("fieldset"))
+      .find(fs => fs.querySelector("legend")?.textContent.trim() === "Bottom");
+    requestAnimationFrame(() => {
+      bottomFieldset?.scrollIntoView({ behavior: "smooth", block: "start" });
+      showBottomChoicePopup(form);
+    });
+    return;
+  }
+
+  const nextSel = form.querySelector(`[name="${next}"]`);
+  const wrapper = nextSel?.nextElementSibling;
+  const nextInput = wrapper?.querySelector("input");
+  if (!nextInput || nextInput.disabled) return;
+
+  requestAnimationFrame(() => {
+    wrapper.scrollIntoView({ behavior: "smooth", block: "center" });
+    nextInput.focus();
+  });
+}
+
+function showBottomChoicePopup(form) {
+  const popup = document.getElementById("bottom-choice-popup");
+  if (!popup) return;
+
+  const ratchetInput = form.querySelector('[name="ratchet"]')?.nextElementSibling?.querySelector("input");
+  const rbInput = form.querySelector('[name="ratchetBit"]')?.nextElementSibling?.querySelector("input");
+
+  const ratchetBtn = popup.querySelector('[data-choice="ratchet"]');
+  const rbBtn = popup.querySelector('[data-choice="ratchetBit"]');
+
+  if (ratchetBtn) ratchetBtn.disabled = !!ratchetInput?.disabled;
+  if (rbBtn) rbBtn.disabled = !!rbInput?.disabled;
+
+  popup.classList.remove("hidden");
+
+  const close = () => popup.classList.add("hidden");
+
+  const onClick = (e) => {
+    const btn = e.target.closest("[data-choice]");
+    if (!btn) return;
+    const choice = btn.dataset.choice;
+    close();
+    popup.removeEventListener("click", onClick);
+    popup.removeEventListener("click", onBackdrop);
+
+    if (choice === "cancel") return;
+
+    const targetName = choice === "ratchet" ? "ratchet" : "ratchetBit";
+    const wrapper = form.querySelector(`[name="${targetName}"]`)?.nextElementSibling;
+    const input = wrapper?.querySelector("input");
+    if (!input || input.disabled) return;
+
+    requestAnimationFrame(() => {
+      wrapper.scrollIntoView({ behavior: "smooth", block: "center" });
+      input.focus();
+    });
+  };
+
+  const onBackdrop = (e) => {
+    if (e.target === popup) {
+      close();
+      popup.removeEventListener("click", onClick);
+      popup.removeEventListener("click", onBackdrop);
+    }
+  };
+
+  popup.addEventListener("click", onClick);
+  popup.addEventListener("click", onBackdrop);
+}
+
 // --- Searchable dropdown ---
 function makeSearchable(sel, items, labelFn) {
   sel.innerHTML = '<option value="">-- Select --</option>';
@@ -102,6 +209,7 @@ function makeSearchable(sel, items, labelFn) {
     sel.dispatchEvent(new Event("change"));
     input.value = label;
     close();
+    advanceToNext(sel);
   }
 
   function open() {
@@ -255,15 +363,15 @@ document.querySelectorAll(".tab").forEach(tab => {
     // ================= HISTORY =================
     if (mode === "history") {
       renderHistory();
-
-      // 🔽 AUTO SCROLL TO TOP
-      requestAnimationFrame(() => {
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth"
-        });
-      });
     }
+
+    // 🔽 AUTO SCROLL TO TOP ON TAB SWITCH
+    requestAnimationFrame(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    });
 
     // ================= HIDE RESULT =================
     document.getElementById("result")?.classList.add("hidden");
