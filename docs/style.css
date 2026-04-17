@@ -138,12 +138,37 @@ select {
 .search-dropdown input {
     display: block;
     width: 100%;
-    padding: 8px 10px;
+    padding: 8px 28px 8px 10px;
     background: #161b22;
     border: 1px solid #30363d;
     border-radius: 6px;
     color: #e6edf3;
     font-size: .9rem;
+}
+
+.dd-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 5;
+}
+
+.dd-clear:hover {
+    color: #f85149;
+    background: rgba(248, 81, 73, 0.15);
+}
+
+.dd-clear.hidden {
+    display: none;
 }
 
 .search-dropdown input:focus {
@@ -816,6 +841,31 @@ select {
 
 .result-stats div[data-mode]:hover {
     background: rgba(255, 255, 255, 0.1);
+}
+
+.download-row {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-download {
+    background: #1f6feb;
+    flex: 0 0 auto;
+    padding: 10px 20px;
+    font-size: .85rem;
+    gap: 6px;
+}
+
+.btn-download:hover {
+    background: #388bfd;
+}
+
+.btn-download img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
 }
 
 .btn-row {

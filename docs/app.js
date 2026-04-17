@@ -119,19 +119,23 @@ function showBottomChoicePopup(form) {
   if (ratchetBtn) ratchetBtn.disabled = !!ratchetInput?.disabled;
   if (rbBtn) rbBtn.disabled = !!rbInput?.disabled;
 
+  // Hide the X close button so the only way out is choosing
+  const closeBtn = popup.querySelector(".popup-close");
+  if (closeBtn) closeBtn.style.display = "none";
+
   popup.classList.remove("hidden");
 
-  const close = () => popup.classList.add("hidden");
+  const close = () => {
+    popup.classList.add("hidden");
+    if (closeBtn) closeBtn.style.display = "";
+  };
 
   const onClick = (e) => {
-    const btn = e.target.closest("[data-choice]");
-    if (!btn) return;
+    const btn = e.target.closest(".popup-choice");
+    if (!btn || btn.disabled) return;
     const choice = btn.dataset.choice;
     close();
     popup.removeEventListener("click", onClick);
-    popup.removeEventListener("click", onBackdrop);
-
-    if (choice === "cancel") return;
 
     const targetName = choice === "ratchet" ? "ratchet" : "ratchetBit";
     const wrapper = form.querySelector(`[name="${targetName}"]`)?.nextElementSibling;
@@ -144,16 +148,7 @@ function showBottomChoicePopup(form) {
     });
   };
 
-  const onBackdrop = (e) => {
-    if (e.target === popup) {
-      close();
-      popup.removeEventListener("click", onClick);
-      popup.removeEventListener("click", onBackdrop);
-    }
-  };
-
   popup.addEventListener("click", onClick);
-  popup.addEventListener("click", onBackdrop);
 }
 
 // --- Searchable dropdown ---
@@ -174,10 +169,17 @@ function makeSearchable(sel, items, labelFn) {
   input.placeholder = "-- Select --";
   input.autocomplete = "off";
 
+  const clearBtn = document.createElement("button");
+  clearBtn.type = "button";
+  clearBtn.className = "dd-clear hidden";
+  clearBtn.textContent = "\u00d7";
+  clearBtn.setAttribute("aria-label", "Clear selection");
+
   const list = document.createElement("div");
   list.className = "dd-list";
 
   wrapper.appendChild(input);
+  wrapper.appendChild(clearBtn);
   wrapper.appendChild(list);
   sel.parentNode.insertBefore(wrapper, sel.nextSibling);
 
@@ -211,6 +213,7 @@ function makeSearchable(sel, items, labelFn) {
     sel.value = idx;
     sel.dispatchEvent(new Event("change"));
     input.value = label;
+    clearBtn.classList.remove("hidden");
     close();
     advanceToNext(sel);
   }
@@ -255,11 +258,20 @@ function makeSearchable(sel, items, labelFn) {
     }
   });
 
+  // Clear button click
+  clearBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    sel.value = "";
+    input.value = "";
+    clearBtn.classList.add("hidden");
+    sel.dispatchEvent(new Event("change"));
+  });
+
   // Allow clearing
-  wrapper._clear = () => { sel.value = ""; input.value = ""; wrapper._filterFn = null; };
+  wrapper._clear = () => { sel.value = ""; input.value = ""; clearBtn.classList.add("hidden"); wrapper._filterFn = null; };
 
   // Allow programmatic selection
-  wrapper._select = (idx) => { sel.value = idx; input.value = labelFn(items[idx]); sel.dispatchEvent(new Event("change")); };
+  wrapper._select = (idx) => { sel.value = idx; input.value = labelFn(items[idx]); clearBtn.classList.remove("hidden"); sel.dispatchEvent(new Event("change")); };
 
   // Allow external filtering
   wrapper._filterFn = null;
@@ -469,7 +481,42 @@ function renderResult(res) {
 
   html += renderStatTable("", grandTotalRest);
 
+  html += `<div class="download-row">
+    <button type="button" class="btn btn-download" aria-label="Download as PNG">
+      <img src="assets/icons/download.png" alt="Download"
+           onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('beforeend','&#x2B07;');">
+      Download PNG
+    </button>
+  </div>`;
+
   el.innerHTML = html;
+
+  // Wire up download button
+  el.querySelector(".btn-download")?.addEventListener("click", () => downloadResultPNG(el));
+}
+
+function downloadResultPNG(el) {
+  // Temporarily hide the download button during capture
+  const dlBtn = el.querySelector(".download-row");
+  if (dlBtn) dlBtn.style.display = "none";
+
+  html2canvas(el, {
+    backgroundColor: "#0d1117",
+    scale: 2,
+    useCORS: true
+  }).then(canvas => {
+    if (dlBtn) dlBtn.style.display = "";
+    const link = document.createElement("a");
+    // Use combo name for filename if available
+    const comboEl = el.querySelector(".combo-name, .combo-header");
+    const name = comboEl ? comboEl.textContent.trim().replace(/[^a-zA-Z0-9_-]/g, "_").replace(/_+/g, "_") : "result";
+    link.download = `${name}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }).catch(() => {
+    if (dlBtn) dlBtn.style.display = "";
+    alert("Failed to generate image.");
+  });
 }
 
 function formatWeight(val) {
@@ -1340,19 +1387,36 @@ document.querySelectorAll(".calc-form").forEach(form => {
   const rbWrapper = rbSel.nextElementSibling;
   const rbInput = rbWrapper.querySelector("input");
 
-  ratchetSel.addEventListener("change", () => {
-    // Skip if already disabled by blade logic (Clock Mirage / Bullet Griffon)
+  function isBladeRestricted() {
     const bladeSel = form.querySelector('[name="blade"]');
-    if (bladeSel) {
-      const idx = bladeSel.value;
-      if (idx !== "" && (DATA.blades[idx].codename === "CLOCKMIRAGE" || DATA.blades[idx].codename === "BULLETGRIFFON")) return;
-    }
+    if (!bladeSel) return false;
+    const idx = bladeSel.value;
+    if (idx === "") return false;
+    const cn = DATA.blades[idx].codename;
+    return cn === "CLOCKMIRAGE" || cn === "BULLETGRIFFON";
+  }
+
+  ratchetSel.addEventListener("change", () => {
+    if (isBladeRestricted()) return;
 
     if (ratchetSel.value !== "") {
       rbWrapper._clear();
       rbInput.disabled = true;
       rbInput.placeholder = "Not available";
-    } else {
+    } else if (bitSel.value === "") {
+      rbInput.disabled = false;
+      rbInput.placeholder = "-- Select --";
+    }
+  });
+
+  bitSel.addEventListener("change", () => {
+    if (isBladeRestricted()) return;
+
+    if (bitSel.value !== "") {
+      rbWrapper._clear();
+      rbInput.disabled = true;
+      rbInput.placeholder = "Not available";
+    } else if (ratchetSel.value === "") {
       rbInput.disabled = false;
       rbInput.placeholder = "-- Select --";
     }

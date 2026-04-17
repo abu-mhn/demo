@@ -220,7 +220,7 @@
   </footer>
 
   <!-- ================= POPUP ================= -->
-  <div id="update-popup" class="popup-overlay hidden" data-version="2026-04-17">
+  <div id="update-popup" class="popup-overlay hidden" data-version="2026-04-18">
     <div class="popup-card">
 
       <button type="button" class="popup-close">&times;</button>
@@ -228,9 +228,10 @@
       <h2 class="popup-title">What's New</h2>
 
       <ul class="popup-list">
-        <li>Ratchet / Ratchet-Bit choice popup is now locked to viewport center — fixes off-screen drift on mobile.</li>
-        <li>Auto-advance and Bottom-choice popup are skipped after Calculate or Random so you can tweak freely.</li>
-        <li>Standard result and history now follow the same data order as CX and CX Expand (Weight → Height → Dash → Burst Res).</li>
+        <li>Each dropdown now has an X button to quickly clear/reset individual selections.</li>
+        <li>Selecting a Bit now correctly disables Ratchet-Bit (and vice versa).</li>
+        <li>Ratchet / Ratchet-Bit choice popup now requires picking one of the two options — no more dismissing by accident.</li>
+        <li>Results now include a Download PNG button to save your combo as an image.</li>
       </ul>
 
       <button type="button" class="btn popup-ok">
@@ -252,6 +253,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
