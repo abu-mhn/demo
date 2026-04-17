@@ -566,6 +566,9 @@ function formatHeight(val) {
 function calcStandard(form) {
   console.log("calcStandard triggered");
 
+  window.__activeForm = form;
+  window.__activeCalc = "standard";
+
   const bladeIdx = form.querySelector('[name="blade"]')?.value;
   const ratchetIdx = form.querySelector('[name="ratchet"]')?.value;
   const bitIdx = form.querySelector('[name="bit"]')?.value;
@@ -675,32 +678,6 @@ function calcStandard(form) {
 
   const headerId = "comboHeader";
 
-  // ================= MODE CLICK =================
-  setTimeout(() => {
-    const bladeModeEl = document.querySelector('[data-mode="blade"]');
-    const rbModeEl = document.querySelector('[data-mode="rb"]');
-
-    if (bladeModeEl) {
-      bladeModeEl.style.cursor = "pointer";
-      bladeModeEl.onclick = () => {
-        if (bladeModes) {
-          blade._modeIndex =
-            (blade._modeIndex + 1) % bladeModes.length;
-          calcStandard(form);
-        }
-      };
-    }
-
-    if (rbModeEl && rbModes) {
-      rbModeEl.style.cursor = "pointer";
-      rbModeEl.onclick = () => {
-        rb._modeIndex =
-          (rb._modeIndex + 1) % rbModes.length;
-        calcStandard(form);
-      };
-    }
-  }, 0);
-
   // ================= SAVE HISTORY =================
   saveHistory("BX", {
     comboName,
@@ -794,14 +771,14 @@ function calcStandard(form) {
     });
   });
 
-  // helpers
-  function bladeModeElExists(m) { return m && bladeModes; }
-  function rbModeElExists(m) { return m && rbModes; }
 }
 
 // --- CX calculation ---
 function calcCX(form) {
   console.log("calcCX triggered");
+
+  window.__activeForm = form;
+  window.__activeCalc = "cx";
 
   const lcIdx = form.querySelector('[name="lockChip"]')?.value;
   const mbIdx = form.querySelector('[name="mainBlade"]')?.value;
@@ -948,24 +925,6 @@ function calcCX(form) {
     }
   });
 
-  // ================= MODE CLICK =================
-  setTimeout(() => {
-    const bind = (selector, arr, obj) => {
-      const el = document.querySelector(selector);
-      if (!el || !arr) return;
-
-      el.style.cursor = "pointer";
-      el.onclick = () => {
-        obj._modeIndex = (obj._modeIndex + 1) % arr.length;
-        calcCX(form);
-      };
-    };
-
-    bind('[data-mode="mb"]', mbModes, mb);
-    bind('[data-mode="ab"]', abModes, ab);
-    bind('[data-mode="rb"]', rbModes, rb);
-  }, 0);
-
   // ================= RESULT =================
   renderResult({
     status: "Success",
@@ -1019,6 +978,7 @@ function calcCXExpand(form) {
 
   // ================= STORE ACTIVE FORM (IMPORTANT FOR MODE CLICK) =================
   window.__activeForm = form;
+  window.__activeCalc = "cxExpand";
 
   const lcIdx = form.querySelector('[name="lockChip"]')?.value;
   const mbIdx = form.querySelector('[name="metalBlade"]')?.value;
@@ -1253,26 +1213,47 @@ document.addEventListener("click", (e) => {
   if (!el) return;
 
   const form = window.__activeForm;
-  if (!form) return;
+  const calc = window.__activeCalc;
+  if (!form || !calc) return;
 
   const mode = el.dataset.mode;
-
-  const mb = DATA.metalBlades?.[form.querySelector('[name="metalBlade"]')?.value];
-  const ob = DATA.overBlades?.[form.querySelector('[name="overBlade"]')?.value];
-  const ab = DATA.assistBlades?.[form.querySelector('[name="assistBlade"]')?.value];
-  const rb = DATA.ratchetBits?.[form.querySelector('[name="ratchetBit"]')?.value];
 
   const cycle = (item) => {
     if (!item?.modes?.length) return;
     item._modeIndex = ((item._modeIndex || 0) + 1) % item.modes.length;
   };
 
-  if (mode === "mb") cycle(mb);
-  if (mode === "ob") cycle(ob);
-  if (mode === "ab") cycle(ab);
-  if (mode === "rb") cycle(rb);
+  if (calc === "standard") {
+    const blade = DATA.blades?.[form.querySelector('[name="blade"]')?.value];
+    const rb = DATA.ratchetBits?.[form.querySelector('[name="ratchetBit"]')?.value];
 
-  calcCXExpand(form);
+    if (mode === "blade") cycle(blade);
+    if (mode === "rb") cycle(rb);
+
+    calcStandard(form);
+  } else if (calc === "cx") {
+    const mb = DATA.mainBlades?.[form.querySelector('[name="mainBlade"]')?.value];
+    const ab = DATA.assistBlades?.[form.querySelector('[name="assistBlade"]')?.value];
+    const rb = DATA.ratchetBits?.[form.querySelector('[name="ratchetBit"]')?.value];
+
+    if (mode === "mb") cycle(mb);
+    if (mode === "ab") cycle(ab);
+    if (mode === "rb") cycle(rb);
+
+    calcCX(form);
+  } else if (calc === "cxExpand") {
+    const mb = DATA.metalBlades?.[form.querySelector('[name="metalBlade"]')?.value];
+    const ob = DATA.overBlades?.[form.querySelector('[name="overBlade"]')?.value];
+    const ab = DATA.assistBlades?.[form.querySelector('[name="assistBlade"]')?.value];
+    const rb = DATA.ratchetBits?.[form.querySelector('[name="ratchetBit"]')?.value];
+
+    if (mode === "mb") cycle(mb);
+    if (mode === "ob") cycle(ob);
+    if (mode === "ab") cycle(ab);
+    if (mode === "rb") cycle(rb);
+
+    calcCXExpand(form);
+  }
 });
 
 // --- Form handlers ---
