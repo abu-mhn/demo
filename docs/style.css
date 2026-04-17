@@ -458,6 +458,7 @@ select {
     margin-bottom: 8px;
     line-height: 1.45;
     word-wrap: break-word;
+    text-align: justify;
 }
 
 .popup-close {
@@ -803,6 +804,115 @@ select {
     font-size: 16px;
     padding: 0 12px;
     box-sizing: border-box;
+}
+
+.library-sort {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.library-sort.hidden {
+    display: none;
+}
+
+.sort-label {
+    font-size: 12px;
+    color: #8b949e;
+    margin-right: 2px;
+}
+
+.sort-btn {
+    background: #161b22;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.sort-btn:hover {
+    background: #21262d;
+    border-color: #484f58;
+}
+
+.sort-btn.active {
+    background: #1f6feb;
+    border-color: #1f6feb;
+    color: #fff;
+}
+
+/* ================= IMAGE POPUP ================= */
+.image-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-popup.hidden {
+    display: none;
+}
+
+.image-popup-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+}
+
+.image-popup-content {
+    position: relative;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 90vw;
+    max-height: 90vh;
+}
+
+.image-popup-content img {
+    max-width: 300px;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #0d1117;
+}
+
+.image-popup-name {
+    margin-top: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #c9d1d9;
+    text-align: center;
+}
+
+.image-popup-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #8b949e;
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.image-popup-close:hover {
+    color: #f0f6fc;
+}
+
+.part-img {
+    cursor: pointer;
 }
 
 .btn img {

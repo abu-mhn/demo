@@ -375,6 +375,9 @@ document.querySelectorAll(".tab").forEach(tab => {
     if (searchInput) searchInput.value = "";
     if (searchResults) searchResults.innerHTML = "";
 
+    const sortBar = document.getElementById("library-sort");
+    if (sortBar) sortBar.classList.add("hidden");
+
     // ================= HISTORY =================
     if (mode === "history") {
       renderHistory();
@@ -500,12 +503,20 @@ function downloadResultPNG(el) {
   const dlBtn = el.querySelector(".download-row");
   if (dlBtn) dlBtn.style.display = "none";
 
+  // Temporarily add footer for the screenshot
+  const footer = document.createElement("div");
+  footer.className = "png-footer";
+  footer.style.cssText = "text-align:center;padding:12px 0 8px;font-size:12px;color:#8b949e;border-top:1px solid #21262d;margin-top:12px;";
+  footer.innerHTML = "Beyblade X Stat Calculator &bull; Created by <strong style='color:#c9d1d9'>RvX Ashwolf</strong> &bull; Powered by <img src='assets/icons/revoxName.webp' alt='Team Revox' style='height:34px;vertical-align:middle;margin-left:4px;position:relative;top:-4px;'>";
+  el.appendChild(footer);
+
   html2canvas(el, {
     backgroundColor: "#0d1117",
     scale: 2,
     useCORS: true
   }).then(canvas => {
     if (dlBtn) dlBtn.style.display = "";
+    footer.remove();
     const link = document.createElement("a");
     // Use combo name for filename if available
     const comboEl = el.querySelector(".combo-name, .combo-header");
@@ -515,6 +526,7 @@ function downloadResultPNG(el) {
     link.click();
   }).catch(() => {
     if (dlBtn) dlBtn.style.display = "";
+    footer.remove();
     alert("Failed to generate image.");
   });
 }
@@ -1749,15 +1761,77 @@ function initLibrarySearch() {
   }
 
   // =========================
+  // SORT STATE
+  // =========================
+  const sortBar = document.getElementById("library-sort");
+  let currentSort = "name";
+  let currentDir = "asc";
+
+  function getStatValue(item, key) {
+    const mode = hasModes(item) ? item.modes[item.currentMode ?? 0] : item;
+    const val = mode[key];
+    if (val === undefined || val === null || val === "TBA") return -1;
+    return Number(val) || 0;
+  }
+
+  function sortItems(items) {
+    return [...items].sort((a, b) => {
+      let cmp;
+      if (currentSort === "name") {
+        cmp = a.name.localeCompare(b.name);
+      } else {
+        cmp = getStatValue(b, currentSort) - getStatValue(a, currentSort);
+      }
+      return currentDir === "desc" ? -cmp : cmp;
+    });
+  }
+
+  function updateSortButtons() {
+    sortBar.querySelectorAll(".sort-btn").forEach(btn => {
+      const key = btn.dataset.sort;
+      if (key === currentSort) {
+        btn.classList.add("active");
+        const arrow = currentDir === "asc" ? " \u25B2" : " \u25BC";
+        btn.textContent = btn.dataset.sort.charAt(0).toUpperCase() + btn.dataset.sort.slice(1) + arrow;
+        if (key === "atk" || key === "def" || key === "sta") btn.textContent = key.toUpperCase() + arrow;
+      } else {
+        btn.classList.remove("active");
+        const label = key === "atk" || key === "def" || key === "sta" ? key.toUpperCase() : key.charAt(0).toUpperCase() + key.slice(1);
+        btn.textContent = label;
+      }
+    });
+  }
+
+  sortBar.addEventListener("click", (e) => {
+    const btn = e.target.closest(".sort-btn");
+    if (!btn) return;
+
+    const key = btn.dataset.sort;
+    if (key === currentSort) {
+      currentDir = currentDir === "asc" ? "desc" : "asc";
+    } else {
+      currentSort = key;
+      currentDir = key === "name" ? "asc" : "desc";
+    }
+
+    updateSortButtons();
+    runSearch();
+  });
+
+  // =========================
   // SEARCH
   // =========================
   function runSearch() {
     const q = input.value.trim().toLowerCase();
     results.innerHTML = "";
 
-    if (!q) return;
+    if (!q) {
+      sortBar.classList.add("hidden");
+      return;
+    }
 
     let filtered = [];
+    let isGetAll = false;
 
     if (q.startsWith("@")) {
       switch (q) {
@@ -1771,16 +1845,35 @@ function initLibrarySearch() {
         case "@getalloverblades": filtered = DATA.overBlades || []; break;
         case "@getalllockchips": filtered = DATA.lockChips || []; break;
         default:
+          sortBar.classList.add("hidden");
           results.innerHTML = `<div class="search-item">Unknown command</div>`;
           return;
       }
+      isGetAll = true;
     } else {
       filtered = ALL_PARTS.filter(p =>
         p?.name?.toLowerCase().includes(q)
       );
     }
 
-    filtered.slice(0, 100).forEach(item => {
+    if (isGetAll && filtered.length > 0) {
+      sortBar.classList.remove("hidden");
+
+      const hasHeight = filtered.some(p => p && p.height != null && p.height !== 0);
+      const heightBtn = sortBar.querySelector('[data-sort="height"]');
+      if (heightBtn) {
+        heightBtn.style.display = hasHeight ? "" : "none";
+        if (!hasHeight && currentSort === "height") {
+          currentSort = "name";
+          currentDir = "asc";
+          updateSortButtons();
+        }
+      }
+    } else {
+      sortBar.classList.add("hidden");
+    }
+
+    sortItems(filtered).slice(0, 100).forEach(item => {
       const div = document.createElement("div");
       div.className = "search-item";
       div.innerHTML = formatItem(item);
@@ -1792,6 +1885,8 @@ function initLibrarySearch() {
   // MODE SWITCH
   // =========================
   results.addEventListener("click", (e) => {
+    if (e.target.closest(".part-img")) return;
+
     const card = e.target.closest(".mode-card");
     if (!card) return;
 
@@ -1813,6 +1908,41 @@ function initLibrarySearch() {
 
     const img = card.querySelector("img");
     if (img) img.src = getImage(item, modeIndex);
+  });
+
+  // =========================
+  // IMAGE POPUP
+  // =========================
+  const imagePopup = document.getElementById("image-popup");
+  const imagePopupImg = document.getElementById("image-popup-img");
+  const imagePopupName = document.getElementById("image-popup-name");
+
+  function openImagePopup(src, name) {
+    imagePopupImg.src = src;
+    imagePopupName.textContent = name || "";
+    imagePopup.classList.remove("hidden");
+  }
+
+  function closeImagePopup() {
+    imagePopup.classList.add("hidden");
+    imagePopupImg.src = "";
+  }
+
+  imagePopup.querySelector(".image-popup-backdrop").addEventListener("click", closeImagePopup);
+  imagePopup.querySelector(".image-popup-close").addEventListener("click", closeImagePopup);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !imagePopup.classList.contains("hidden")) closeImagePopup();
+  });
+
+  results.addEventListener("click", (e) => {
+    const img = e.target.closest(".part-img");
+    if (!img) return;
+
+    e.stopPropagation();
+
+    const card = img.closest(".mode-card");
+    const name = card ? card.querySelector("strong")?.textContent || "" : "";
+    openImagePopup(img.src, name);
   });
 
   // =========================

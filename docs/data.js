@@ -23,7 +23,7 @@ const DATA = {
       ["#eddf27", "#be9f0b"],
       ["#b6151b", "#b93824"],
       ["#c6db59", "#84ba4a"],
-      
+
     ] },
     { atk: 20, def: 55, sta: 25, weight: 32.4, spindirection: "R", name: "Knight Shield", codename: "KNIGHTSHIELD" },
     { atk: 35, def: 30, sta: 35, weight: 27.7, spindirection: "R", name: "Dranzer Spiral", codename: "DRANZERSPIRAL" },
@@ -51,7 +51,7 @@ const DATA = {
     { atk: 10, def: 35, sta: 55, weight: 34.5, spindirection: "R", name: "Phoenix Rudder", codename: "PHOENIXRUDDER" },
     {
       atk: 55, def: 25, sta: 20, weight: 42.3, spindirection: "L", name: "Lightning L-Drago", codename: "LIGHTNING L-DRAGO", currentMode: 0, modes: [
-        { modeName: "Upper", atk: 55, def: 25, sta: 20, weight: 42.3, spindirection: "L" },
+        { modeName: "Upper", atk: 55, def: 25, sta: 20, weight: 34.0, spindirection: "L" },
         { modeName: "Rapid Hit", atk: 50, def: 30, sta: 20, weight: 33.5, spindirection: "L" },
       ]
     },
