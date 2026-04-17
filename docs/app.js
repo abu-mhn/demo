@@ -116,7 +116,9 @@ function showBottomChoicePopup(form) {
   const ratchetBtn = popup.querySelector('[data-choice="ratchet"]');
   const rbBtn = popup.querySelector('[data-choice="ratchetBit"]');
 
-  if (ratchetBtn) ratchetBtn.disabled = !!ratchetInput?.disabled;
+  // Only disable ratchet button if both ratchet AND bit are disabled
+  const bitInput = form.querySelector('[name="bit"]')?.nextElementSibling?.querySelector("input");
+  if (ratchetBtn) ratchetBtn.disabled = !!ratchetInput?.disabled && !!bitInput?.disabled;
   if (rbBtn) rbBtn.disabled = !!rbInput?.disabled;
 
   // Hide the X close button so the only way out is choosing
@@ -137,9 +139,17 @@ function showBottomChoicePopup(form) {
     close();
     popup.removeEventListener("click", onClick);
 
-    const targetName = choice === "ratchet" ? "ratchet" : "ratchetBit";
-    const wrapper = form.querySelector(`[name="${targetName}"]`)?.nextElementSibling;
-    const input = wrapper?.querySelector("input");
+    let targetName = choice === "ratchet" ? "ratchet" : "ratchetBit";
+    let wrapper = form.querySelector(`[name="${targetName}"]`)?.nextElementSibling;
+    let input = wrapper?.querySelector("input");
+
+    // If ratchet is disabled (e.g. Bullet Griffon), skip to bit
+    if (choice === "ratchet" && input?.disabled) {
+      targetName = "bit";
+      wrapper = form.querySelector(`[name="${targetName}"]`)?.nextElementSibling;
+      input = wrapper?.querySelector("input");
+    }
+
     if (!input || input.disabled) return;
 
     requestAnimationFrame(() => {
