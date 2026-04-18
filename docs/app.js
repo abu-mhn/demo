@@ -2277,6 +2277,140 @@ function initLibrarySearch() {
   });
 
   input.addEventListener("input", runSearch);
+
+  // =========================
+  // CAMERA SCAN
+  // =========================
+  const camBtn = document.getElementById("library-cam-btn");
+  const camScanner = document.getElementById("cam-scanner");
+  const camVideo = document.getElementById("cam-video");
+  const camCanvas = document.getElementById("cam-canvas");
+  const camCapture = document.getElementById("cam-capture");
+  const camClose = document.getElementById("cam-close");
+  const camStatus = document.getElementById("cam-status");
+
+  let camStream = null;
+
+  function stopCamera() {
+    if (camStream) {
+      camStream.getTracks().forEach(t => t.stop());
+      camStream = null;
+    }
+    camVideo.srcObject = null;
+    camScanner.classList.add("hidden");
+    camStatus.textContent = "";
+  }
+
+  async function startCamera() {
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } }
+      });
+      camVideo.srcObject = camStream;
+      camScanner.classList.remove("hidden");
+      camStatus.textContent = "Point at a part and tap Capture";
+    } catch (err) {
+      camStatus.textContent = "Camera access denied";
+      console.error("Camera error:", err);
+    }
+  }
+
+  function getHistogram(ctx, w, h) {
+    const data = ctx.getImageData(0, 0, w, h).data;
+    const bins = 16;
+    const hist = new Float32Array(bins * 3);
+    const total = w * h;
+
+    for (let i = 0; i < data.length; i += 4) {
+      hist[Math.floor(data[i] / (256 / bins))] += 1;
+      hist[bins + Math.floor(data[i + 1] / (256 / bins))] += 1;
+      hist[bins * 2 + Math.floor(data[i + 2] / (256 / bins))] += 1;
+    }
+
+    for (let i = 0; i < hist.length; i++) hist[i] /= total;
+    return hist;
+  }
+
+  function compareHist(a, b) {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) {
+      const min = Math.min(a[i], b[i]);
+      sum += min;
+    }
+    return sum / 3;
+  }
+
+  async function loadImageHist(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const size = 64;
+        camCanvas.width = size;
+        camCanvas.height = size;
+        const ctx = camCanvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, size, size);
+        resolve(getHistogram(ctx, size, size));
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  async function scanCapture() {
+    camStatus.textContent = "Analyzing...";
+
+    const size = 64;
+    camCanvas.width = size;
+    camCanvas.height = size;
+    const ctx = camCanvas.getContext("2d");
+    ctx.drawImage(camVideo, 0, 0, size, size);
+    const capturedHist = getHistogram(ctx, size, size);
+
+    const scores = [];
+
+    for (const item of ALL_PARTS) {
+      const src = getImage(item, 0);
+      const refHist = await loadImageHist(src);
+      if (!refHist) continue;
+      const score = compareHist(capturedHist, refHist);
+      scores.push({ item, score });
+    }
+
+    scores.sort((a, b) => b.score - a.score);
+
+    const top = scores.slice(0, 10);
+
+    results.innerHTML = "";
+    sortBar.classList.add("hidden");
+
+    if (top.length === 0) {
+      results.innerHTML = '<div class="search-item">No matches found</div>';
+    } else {
+      top.forEach(({ item, score }) => {
+        const div = document.createElement("div");
+        div.className = "search-item";
+        div.innerHTML = formatItem(item);
+        results.appendChild(div);
+      });
+    }
+
+    camStatus.textContent = `Found ${top.length} possible matches`;
+    stopCamera();
+  }
+
+  if (camBtn) {
+    camBtn.addEventListener("click", () => {
+      if (camScanner.classList.contains("hidden")) {
+        startCamera();
+      } else {
+        stopCamera();
+      }
+    });
+  }
+
+  if (camCapture) camCapture.addEventListener("click", scanCapture);
+  if (camClose) camClose.addEventListener("click", stopCamera);
 }
 
 document.addEventListener("DOMContentLoaded", initLibrarySearch);
