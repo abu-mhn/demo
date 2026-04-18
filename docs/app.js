@@ -556,7 +556,7 @@ function renderRadarChart(grandTotal) {
   });
 
   return `<div class="stat-radar">
-    <svg viewBox="0 0 320 300" width="320" height="300">
+    <svg viewBox="0 0 320 300">
       ${grid}
       ${axes}
       <polygon points="${dataPts}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
