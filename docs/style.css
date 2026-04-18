@@ -1484,3 +1484,129 @@ body.light-mode .part-img {
     background: #e5e7eb;
 }
 
+/* =======================
+   SCOREBOARD OVERLAY
+======================= */
+.scoreboard-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #0d1117;
+    display: flex;
+    align-items: stretch;
+    user-select: none;
+    touch-action: none;
+}
+
+.scoreboard-overlay.hidden {
+    display: none;
+}
+
+.scoreboard-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.scoreboard-left {
+    background: #1a2332;
+}
+
+.scoreboard-right {
+    background: #2a1a1a;
+}
+
+.scoreboard-player-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.scoreboard-score {
+    font-size: clamp(4rem, 15vw, 8rem);
+    font-weight: 900;
+    color: #e6edf3;
+    line-height: 1;
+}
+
+.scoreboard-hint {
+    font-size: 0.7rem;
+    color: #484f58;
+    margin-top: 12px;
+}
+
+.scoreboard-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #484f58;
+    background: #0d1117;
+    letter-spacing: 1px;
+}
+
+.scoreboard-reset {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #21262d;
+    color: #8b949e;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.scoreboard-reset:hover {
+    background: #30363d;
+    color: #e6edf3;
+}
+
+/* Light mode */
+body.light-mode .scoreboard-overlay {
+    background: #f6f8fa;
+}
+
+body.light-mode .scoreboard-left {
+    background: #e8f0fe;
+}
+
+body.light-mode .scoreboard-right {
+    background: #fce8e8;
+}
+
+body.light-mode .scoreboard-divider {
+    background: #f6f8fa;
+    color: #656d76;
+}
+
+body.light-mode .scoreboard-score {
+    color: #1f2328;
+}
+
+body.light-mode .scoreboard-player-label {
+    color: #656d76;
+}
+
+body.light-mode .scoreboard-reset {
+    background: #ffffff;
+    color: #656d76;
+    border-color: #d1d9e0;
+}
+
+body.light-mode .scoreboard-reset:hover {
+    background: #f3f4f6;
+    color: #1f2328;
+}
+

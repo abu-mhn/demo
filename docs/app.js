@@ -2492,10 +2492,54 @@ function renderHistory() {
   });
 }
 
-// ================= FULLSCREEN ON ROTATE (MOBILE) =================
+// ================= SCOREBOARD ON ROTATE (MOBILE) =================
 (function () {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (!isMobile) return;
+
+  let scoreA = 0;
+  let scoreB = 0;
+
+  const overlay = document.getElementById("scoreboard-overlay");
+  const scoreAEl = document.getElementById("score-a");
+  const scoreBEl = document.getElementById("score-b");
+  const resetBtn = document.getElementById("scoreboard-reset");
+  const leftSide = document.getElementById("scoreboard-left");
+  const rightSide = document.getElementById("scoreboard-right");
+
+  if (!overlay) return;
+
+  function updateDisplay() {
+    scoreAEl.textContent = scoreA;
+    scoreBEl.textContent = scoreB;
+  }
+
+  function addSwipe(el, onChange) {
+    let startY = 0;
+    let swiping = false;
+
+    el.addEventListener("touchstart", e => {
+      startY = e.touches[0].clientY;
+      swiping = true;
+    }, { passive: true });
+
+    el.addEventListener("touchend", e => {
+      if (!swiping) return;
+      swiping = false;
+      const dy = startY - e.changedTouches[0].clientY;
+      if (Math.abs(dy) < 30) return;
+      onChange(dy > 0 ? 1 : -1);
+    });
+  }
+
+  addSwipe(leftSide, d => { scoreA = Math.max(0, scoreA + d); updateDisplay(); });
+  addSwipe(rightSide, d => { scoreB = Math.max(0, scoreB + d); updateDisplay(); });
+
+  resetBtn.addEventListener("click", () => {
+    scoreA = 0;
+    scoreB = 0;
+    updateDisplay();
+  });
 
   function isLandscape() {
     if (screen.orientation) return screen.orientation.type.startsWith("landscape");
@@ -2504,13 +2548,9 @@ function renderHistory() {
 
   function handleOrientation() {
     if (isLandscape()) {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen?.().catch(() => {});
-      }
+      overlay.classList.remove("hidden");
     } else {
-      if (document.fullscreenElement) {
-        document.exitFullscreen?.().catch(() => {});
-      }
+      overlay.classList.add("hidden");
     }
   }
 
