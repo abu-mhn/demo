@@ -189,25 +189,9 @@
         <div class="library-search-row">
           <input type="text" id="library-search" placeholder="Search Beyblade parts..." autocomplete="off" />
 
-          <button type="button" id="library-cam-btn" class="cam-icon" title="Scan part with camera" aria-label="Scan with camera">
-            <img src="assets/icons/camera.webp" alt="Cam"
-                 onerror="this.style.display='none';this.parentNode.textContent='&#x1F4F7;';">
-          </button>
-
           <button type="button" id="library-help" class="help-icon" title="Click for search commands" aria-label="Search commands help">
             ?
           </button>
-        </div>
-
-        <!-- Camera scanner -->
-        <div id="cam-scanner" class="cam-scanner hidden">
-          <video id="cam-video" autoplay playsinline></video>
-          <div class="cam-controls">
-            <button type="button" id="cam-capture" class="btn cam-btn">Capture</button>
-            <button type="button" id="cam-close" class="btn cam-btn cam-btn-cancel">Close</button>
-          </div>
-          <canvas id="cam-canvas" style="display:none;"></canvas>
-          <div id="cam-status" class="cam-status"></div>
         </div>
 
         <div id="library-sort" class="library-sort hidden">
