@@ -1,3 +1,14 @@
+// --- Part image path helper ---
+function partImgNormalize(str) {
+  return (str || "").trim().replace(/\s+/g, "").replace(/-/g, "");
+}
+
+function partImgPath(folder, name, modeIndex) {
+  const base = partImgNormalize(name);
+  const suffix = modeIndex != null ? `${base}${modeIndex}.webp` : `${base}.webp`;
+  return `assets/${folder}/${suffix}`;
+}
+
 // --- Utility ---
 function getType(totalAtk, totalDef, totalSta, isRatchetBit) {
   if (isRatchetBit) {
@@ -416,6 +427,10 @@ document.querySelectorAll(".tab").forEach(tab => {
       activeBtn.classList.remove("hidden");
       activeBtn.style.display = "inline-block";
     }
+
+    // Re-check calc button state for the active form
+    const activeForm = document.querySelector(`#form-${mode}`);
+    if (activeForm && window._updateCalcBtn) window._updateCalcBtn(activeForm);
   });
 });
 
@@ -441,16 +456,18 @@ function renderStatBars(grandTotal) {
   if (statDisplayMode === "radar") return renderRadarChart(grandTotal);
 
   const stats = [
-    { label: "ATK", value: grandTotal.ATK },
-    { label: "DEF", value: grandTotal.DEF },
-    { label: "STA", value: grandTotal.STA },
+    { label: "ATK", value: grandTotal.ATK, max: 150 },
+    { label: "DEF", value: grandTotal.DEF, max: 150 },
+    { label: "STA", value: grandTotal.STA, max: 150 },
+    { label: "Dash", value: grandTotal.Dash, max: 50 },
+    { label: "B.Res", value: grandTotal["Burst Res"], max: 100 },
   ];
   let html = '<div class="stat-bars">';
   for (const s of stats) {
-    const isTBA = s.value === "TBA";
+    const isTBA = s.value === "TBA" || s.value == null;
     const val = isTBA ? 0 : Number(s.value);
-    const color = isTBA ? "#484f58" : getBarColor(val);
-    const pct = isTBA ? 0 : Math.min(val / 150 * 100, 100);
+    const color = isTBA ? "#484f58" : (s.label === "Dash" || s.label === "B.Res") ? getRadarColor(s.label, val) : getBarColor(val);
+    const pct = isTBA ? 0 : Math.min(val / s.max * 100, 100);
     html += `<div class="stat-bar-row">
       <span class="stat-bar-label">${s.label}</span>
       <div class="stat-bar-track">
@@ -594,17 +611,27 @@ function renderResult(res) {
     `;
   }
 
+  if (res.partImages && res.partImages.length > 0) {
+    html += `<div class="result-parts">`;
+    for (const p of res.partImages) {
+      html += `<div class="result-part">
+        <div class="result-part-img-box">
+          <img src="${p.src}" alt="${p.name}" class="result-part-img"
+               onerror="this.closest('.result-part').style.display='none'">
+        </div>
+        <span class="result-part-name">${p.name}</span>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
   html += renderStatBars(res.grandTotal);
 
   const { ATK, DEF, STA, Type, "Spin Direction": _spin, ...grandTotalRest } =
     res.grandTotal;
 
-  if (statDisplayMode === "radar") {
-    const { Dash: _d, "Burst Res": _b, ...radarRest } = grandTotalRest;
-    html += renderStatTable("", radarRest);
-  } else {
-    html += renderStatTable("", grandTotalRest);
-  }
+  const { Dash: _d, "Burst Res": _b, ...filteredRest } = grandTotalRest;
+  html += renderStatTable("", filteredRest);
 
   html += `<div class="download-row">
     <button type="button" class="btn btn-download" aria-label="Download as PNG">
@@ -641,16 +668,21 @@ function downloadResultPNG(el) {
   // Move element off-screen so the user doesn't see the footer flash
   const origPos = el.style.position;
   const origLeft = el.style.left;
+  const origWidth = el.style.width;
+  const captureWidth = el.offsetWidth;
+  el.style.width = captureWidth + "px";
   el.style.position = "fixed";
   el.style.left = "-9999px";
 
   html2canvas(el, {
     backgroundColor: "#0d1117",
     scale: 2,
-    useCORS: true
+    useCORS: true,
+    width: captureWidth
   }).then(canvas => {
     el.style.position = origPos;
     el.style.left = origLeft;
+    el.style.width = origWidth;
     if (dlBtn) dlBtn.style.display = "";
     footer.remove();
     const link = document.createElement("a");
@@ -663,6 +695,7 @@ function downloadResultPNG(el) {
   }).catch(() => {
     el.style.position = origPos;
     el.style.left = origLeft;
+    el.style.width = origWidth;
     if (dlBtn) dlBtn.style.display = "";
     footer.remove();
     alert("Failed to generate image.");
@@ -835,11 +868,23 @@ function calcStandard(form) {
     }
   });
 
+  // ================= PART IMAGES =================
+  const partImages = [
+    { name: blade.name, src: partImgPath("blades", blade.name, bladeModes ? blade._modeIndex : null) },
+  ];
+  if (isRB && rb) {
+    partImages.push({ name: rb.name, src: partImgPath("ratchetBits", rb.name, rbModes ? rb._modeIndex : null) });
+  } else {
+    if (ratchet) partImages.push({ name: ratchet.name, src: partImgPath("ratchets", ratchet.name) });
+    if (bit) partImages.push({ name: bit.name, src: partImgPath("bits", bit.name) });
+  }
+
   // ================= RESULT =================
   renderResult({
     status: "Success",
     message: "",
     barState,
+    partImages,
 
     comboName: `
       <div id="${headerId}" class="combo-header">
@@ -1046,11 +1091,25 @@ function calcCX(form) {
     }
   });
 
+  // ================= PART IMAGES =================
+  const partImages = [
+    { name: lc.name, src: partImgPath("lockChips", lc.name) },
+    { name: mb.name, src: partImgPath("mainBlades", mb.name, mbModes ? mb._modeIndex : null) },
+    { name: ab.name, src: partImgPath("assistBlades", ab.name, abModes ? ab._modeIndex : null) },
+  ];
+  if (isRB && rb) {
+    partImages.push({ name: rb.name, src: partImgPath("ratchetBits", rb.name, rbModes ? rb._modeIndex : null) });
+  } else {
+    if (ratchet) partImages.push({ name: ratchet.name, src: partImgPath("ratchets", ratchet.name) });
+    if (bit) partImages.push({ name: bit.name, src: partImgPath("bits", bit.name) });
+  }
+
   // ================= RESULT =================
   renderResult({
     status: "Success",
     message: "",
     barState: isStatTBA ? "grey" : "normal",
+    partImages,
 
     comboName: `
       <div class="combo-header">
@@ -1280,10 +1339,25 @@ function calcCXExpand(form) {
     }
   });
 
+  // ================= PART IMAGES =================
+  const partImages = [
+    { name: lc.name, src: partImgPath("lockChips", lc.name) },
+    { name: mb.name, src: partImgPath("metalBlades", mb.name, mbModes ? (mb._modeIndex || 0) : null) },
+  ];
+  if (ob) partImages.push({ name: ob.name, src: partImgPath("overBlades", ob.name, obModes ? (ob._modeIndex || 0) : null) });
+  partImages.push({ name: ab.name, src: partImgPath("assistBlades", ab.name, abModes ? (ab._modeIndex || 0) : null) });
+  if (isRB && rb) {
+    partImages.push({ name: rb.name, src: partImgPath("ratchetBits", rb.name, rbModes ? (rb._modeIndex || 0) : null) });
+  } else {
+    if (ratchet) partImages.push({ name: ratchet.name, src: partImgPath("ratchets", ratchet.name) });
+    if (bit) partImages.push({ name: bit.name, src: partImgPath("bits", bit.name) });
+  }
+
   // ================= RESULT =================
   renderResult({
     status: "Success",
     message: "",
+    partImages,
 
     comboName: `
       <div class="combo-header">
@@ -1620,13 +1694,99 @@ document.querySelectorAll(".btn-reset").forEach(btn => {
   });
 });
 
+// --- Calc button enable/disable ---
+(function () {
+  const COMBO_RULES = {
+    "form-standard": {
+      top: ["blade"],
+      bottom: { ratchetBit: ["ratchetBit"], ratchet: ["ratchet", "bit"] }
+    },
+    "form-cx": {
+      top: ["lockChip", "mainBlade", "assistBlade"],
+      bottom: { ratchetBit: ["ratchetBit"], ratchet: ["ratchet", "bit"] }
+    },
+    "form-cxExpand": {
+      top: ["lockChip", "metalBlade", "assistBlade"],
+      bottom: { ratchetBit: ["ratchetBit"], ratchet: ["ratchet", "bit"] }
+    }
+  };
+
+  function isComboComplete(form) {
+    const rules = COMBO_RULES[form.id];
+    if (!rules) return false;
+
+    // Check all top parts are selected
+    for (const name of rules.top) {
+      const sel = form.querySelector(`[name="${name}"]`);
+      if (!sel || sel.value === "") return false;
+    }
+
+    // Check bottom: either ratchetBit OR (ratchet + bit)
+    const rbSel = form.querySelector('[name="ratchetBit"]');
+    const rSel = form.querySelector('[name="ratchet"]');
+    const bSel = form.querySelector('[name="bit"]');
+
+    const hasRB = rbSel && rbSel.value !== "";
+    const hasRatchetBit = rSel && rSel.value !== "" && bSel && bSel.value !== "";
+
+    // Special case: Bullet Griffon only needs blade + bit
+    const bladeSel = form.querySelector('[name="blade"]');
+    if (bladeSel && bladeSel.value !== "") {
+      const cn = DATA.blades?.[bladeSel.value]?.codename;
+      if (cn === "BULLETGRIFFON") {
+        return bSel && bSel.value !== "";
+      }
+    }
+
+    return hasRB || hasRatchetBit;
+  }
+
+  function updateCalcBtn(form) {
+    const btn = form.querySelector(".calc-btn");
+    if (!btn) return;
+    btn.disabled = !isComboComplete(form);
+  }
+
+  document.querySelectorAll(".calc-form").forEach(form => {
+    // Disable on init
+    const btn = form.querySelector(".calc-btn");
+    if (btn) btn.disabled = true;
+
+    // Listen to all selects in the form
+    form.querySelectorAll("select").forEach(sel => {
+      sel.addEventListener("change", () => updateCalcBtn(form));
+    });
+  });
+
+  // Re-disable after reset
+  document.querySelectorAll(".btn-reset").forEach(btn => {
+    const form = btn.closest("form");
+    if (form) {
+      btn.addEventListener("click", () => {
+        requestAnimationFrame(() => updateCalcBtn(form));
+      });
+    }
+  });
+
+  // Re-enable after lucky/random fills all fields
+  window._updateCalcBtn = updateCalcBtn;
+})();
+
 // --- I'm Feeling Lucky ---
 function randIdx(arr) { return Math.floor(Math.random() * arr.length); }
+
+function getModeWeight(item) {
+  if (item.modes && item.modes.length > 0) {
+    const mode = item.modes[item.currentMode || 0];
+    if (mode && mode.weight != null) return mode.weight;
+  }
+  return item.weight || 0;
+}
 
 function heaviestIdx(arr) {
   let max = -1, idx = 0;
   arr.forEach((item, i) => {
-    const w = item.weight || 0;
+    const w = getModeWeight(item);
     if (w > max) { max = w; idx = i; }
   });
   return idx;
@@ -1635,7 +1795,7 @@ function heaviestIdx(arr) {
 function lightestIdx(arr) {
   let min = Infinity, idx = 0;
   arr.forEach((item, i) => {
-    const w = item.weight || Infinity;
+    const w = getModeWeight(item) || Infinity;
     if (w < min) { min = w; idx = i; }
   });
   return idx;
@@ -1900,6 +2060,7 @@ document.querySelectorAll(".btn-lucky").forEach(btn => {
   popup.classList.remove("hidden");
   const dismiss = () => {
     popup.classList.add("hidden");
+    scoreboardEnabled = true;
   };
   popup.querySelector(".popup-ok").addEventListener("click", dismiss);
 })();
@@ -2337,8 +2498,10 @@ function renderHistory() {
   }
 
   function createBar(label, value, isTBA) {
-    const color = isTBA ? "#95a5a6" : getColor(value);
-    const width = isTBA ? 100 : Math.min(Number(value), 120);
+    const maxMap = { "Dash": 50, "B.Res": 100 };
+    const max = maxMap[label] || 120;
+    const color = isTBA ? "#95a5a6" : (label === "Dash" || label === "B.Res") ? getRadarColor(label, Number(value)) : getColor(value);
+    const width = isTBA ? 0 : Math.min(Number(value) / max * 100, 100);
 
     return `
       <div class="stat-row">
@@ -2437,6 +2600,27 @@ function renderHistory() {
     const div = document.createElement("div");
     div.className = "history-item";
 
+    // ================= PART IMAGES =================
+    const parts = data.parts || {};
+    const PART_FOLDER = {
+      blade: "blades", lockChip: "lockChips",
+      mainBlade: "mainBlades", assistBlade: "assistBlades",
+      metalBlade: "metalBlades", overBlade: "overBlades",
+      ratchet: "ratchets", bit: "bits", ratchetBit: "ratchetBits"
+    };
+    let partsHtml = "";
+    for (const [key, name] of Object.entries(parts)) {
+      if (!name || !PART_FOLDER[key]) continue;
+      const src = partImgPath(PART_FOLDER[key], name);
+      partsHtml += `<div class="result-part">
+        <div class="result-part-img-box">
+          <img src="${src}" alt="${name}" class="result-part-img"
+               onerror="this.closest('.result-part').style.display='none'">
+        </div>
+        <span class="result-part-name">${name}</span>
+      </div>`;
+    }
+
     div.innerHTML = `
       <div class="history-header">
         <strong class="history-name">
@@ -2449,15 +2633,19 @@ function renderHistory() {
         </span>
       </div>
 
+      ${partsHtml ? `<div class="result-parts">${partsHtml}</div>` : ""}
+
       <div class="history-section">
         <b>Grand Total</b>
 
         ${statDisplayMode === "radar"
           ? renderRadarChart({ ATK: atk, DEF: def, STA: sta, Dash: total.Dash, "Burst Res": total["Burst Res"] })
           : createBar("ATK", atk, isAtkTBA) + createBar("DEF", def, isDefTBA) + createBar("STA", sta, isStaTBA)
+            + createBar("Dash", total.Dash, total.Dash == null || total.Dash === "TBA")
+            + createBar("B.Res", total["Burst Res"], total["Burst Res"] == null || total["Burst Res"] === "TBA")
         }
 
-        ${statDisplayMode === "radar" ? renderObject((() => { const { Dash: _d, "Burst Res": _b, ...rest } = total; return rest; })()) : renderObject(total)}
+        ${renderObject((() => { const { Dash: _d, "Burst Res": _b, ...rest } = total; return rest; })())}
 
         ${(mainBladeMode || assistBladeMode || rbMode) ? `
           <div class="stat-section">
@@ -2493,6 +2681,8 @@ function renderHistory() {
 }
 
 // ================= SCOREBOARD ON ROTATE (MOBILE) =================
+let scoreboardEnabled = false;
+
 (function () {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (!isMobile) return;
@@ -2559,6 +2749,7 @@ function renderHistory() {
   }
 
   function handleOrientation() {
+    if (!scoreboardEnabled) return;
     if (isLandscape()) {
       overlay.classList.remove("hidden");
       enterFullscreen();

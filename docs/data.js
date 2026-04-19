@@ -50,7 +50,7 @@ const DATA = {
     { atk: 15, def: 70, sta: 15, weight: 35.0, spindirection: "R", name: "Leon Crest", codename: "LEONCREST" },
     { atk: 10, def: 35, sta: 55, weight: 34.5, spindirection: "R", name: "Phoenix Rudder", codename: "PHOENIXRUDDER" },
     {
-      atk: 55, def: 25, sta: 20, weight: 42.3, spindirection: "L", name: "Lightning L-Drago", codename: "LIGHTNING L-DRAGO", currentMode: 0, modes: [
+      atk: 55, def: 25, sta: 20, weight: 34.0, spindirection: "L", name: "Lightning L-Drago", codename: "LIGHTNING L-DRAGO", currentMode: 0, modes: [
         { modeName: "Upper", atk: 55, def: 25, sta: 20, weight: 34.0, spindirection: "L" },
         { modeName: "Rapid Hit", atk: 50, def: 30, sta: 20, weight: 33.5, spindirection: "L" },
       ]

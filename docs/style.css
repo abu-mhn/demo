@@ -251,6 +251,12 @@ select {
     background: #2ea043;
 }
 
+.btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .btn-reset {
     background: #da3633;
     flex: 0 0 auto;
@@ -345,6 +351,63 @@ select {
     color: #f0883e;
     margin-top: 12px;
     text-align: center;
+}
+
+/* =======================
+   RESULT PART IMAGES
+======================= */
+.result-parts {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.result-part {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.result-part-img-box {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.result-part-img {
+    max-width: 52px;
+    max-height: 52px;
+    width: auto;
+    height: auto;
+    display: block;
+}
+
+.result-part-name {
+    font-size: 0.65rem;
+    color: #8b949e;
+    text-align: center;
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.light-mode .result-part-img-box {
+    background: #f6f8fa;
+    border-color: #d1d9e0;
+}
+
+body.light-mode .result-part-name {
+    color: #656d76;
 }
 
 /* =======================
